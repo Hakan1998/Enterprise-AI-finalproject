@@ -1,0 +1,10 @@
+from zenml import step
+import pandas as pd
+
+@step
+def inference_data_loader(file_path: str) -> pd.DataFrame:
+    """
+    Loads inference data from a CSV file.
+    """
+    data = pd.read_csv(file_path)
+    return data
