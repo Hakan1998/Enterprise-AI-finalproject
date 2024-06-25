@@ -21,7 +21,7 @@ class MultiLabelBinarizerWrapper:
 @step
 def create_preprocessing_pipeline():
     # Numeric features preprocessing
-    numeric_features = ['popularity', 'revenue', 'runtime', 'vote_average', 'vote_count']
+    numeric_features = dataset[['popularity', 'revenue', 'runtime', 'vote_average', 'vote_count',"average_rating","rating_count"]]
     numeric_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler())
@@ -48,13 +48,16 @@ def create_preprocessing_pipeline():
     ])
     
     # Combine all transformers
-    preprocessor = ColumnTransformer(
+    preprocessing = ColumnTransformer(
         transformers=[
             ('num', numeric_transformer, numeric_features),
             ('cat', categorical_transformer, categorical_features),
             ('complex', complex_transformer, complex_features),
             ('text', text_transformer, text_features)
         ])
+    pipeline = Pipeline([
+        ("preprocessing",preprocessing)
+    ])
 
-    return preprocessor
+    return pipeline
 
