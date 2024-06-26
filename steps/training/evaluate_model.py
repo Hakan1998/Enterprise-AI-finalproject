@@ -1,68 +1,57 @@
 from zenml import step
-import numpy as np
+from typing import Dict, Any
 import pandas as pd
-from typing import Tuple, Any, List
-
-def precision_at_k(recommended: List[int], relevant: List[int], k: int) -> float:
-    recommended_at_k = recommended[:k]
-    relevant_set = set(relevant)
-    recommended_set = set(recommended_at_k)
-    relevant_recommended = relevant_set.intersection(recommended_set)
-    return len(relevant_recommended) / k
-
-def recall_at_k(recommended: List[int], relevant: List[int], k: int) -> float:
-    recommended_at_k = recommended[:k]
-    relevant_set = set(relevant)
-    relevant_recommended = relevant_set.intersection(set(recommended_at_k))
-    return len(relevant_recommended) / len(relevant)
-
-def ndcg_at_k(recommended: List[int], relevant: List[int], k: int) -> float:
-    recommended_at_k = recommended[:k]
-    dcg = 0.0
-    idcg = 0.0
-    for i in range(len(recommended_at_k)):
-        if recommended_at_k[i] in relevant:
-            dcg += 1.0 / np.log2(i + 2)
-    for i in range(min(k, len(relevant))):
-        idcg += 1.0 / np.log2(i + 2)
-    return dcg / idcg if idcg > 0 else 0.0
 
 @step
-def evaluate_model(model: Any, X_test: pd.DataFrame, y_test: pd.Series, model_type: str) -> Tuple[float, float, float]:
-    """
-    Evaluate the performance of a model on the test data.
+def evaluate_model(
+    train_data: pd.DataFrame,
+    test_data: pd.DataFrame,
+    user_cf_recs: Dict[int, Any],
+    item_cf_recs: Dict[int, Any],
+    svd_recs: Dict[int, Any],
+    content_recs: Dict[int, Any]
+) -> Dict[str, Any]:
+    
 
-    Args:
-        model (Any): The trained model.
-        X_test (pd.DataFrame): The test features.
-        y_test (pd.Series): The test labels.
-        model_type (str): The type of model being evaluated ("baseline", "collaborative", "content_based", "matrix_factorization").
 
-    Returns:
-        Tuple[float, float, float]: The precision@K, recall@K, and ndcg@K of the model predictions.
-    """
-    # Placeholder for predictions based on the model type
-    if model_type == "baseline":
-        y_pred = [model] * len(X_test)
-    elif model_type == "collaborative":
-        user_item_matrix = X_test.pivot(index='user_id', columns='movie_id', values='rating').fillna(0)
-        distances, indices = model.kneighbors(user_item_matrix, n_neighbors=10)
-        y_pred = [list(user_item_matrix.columns[indices[i]]) for i in range(len(indices))]
-    elif model_type == "content_based":
-        similarity_matrix = model
-        y_pred = similarity_matrix.dot(X_test.T).argsort(axis=1)[:, -10:][:, ::-1]
-    elif model_type == "matrix_factorization":
-        user_item_matrix = X_test.pivot(index='user_id', columns='movie_id', values='rating').fillna(0)
-        W = model.transform(user_item_matrix)
-        H = model.components_
-        y_pred_matrix = np.dot(W, H)
-        y_pred = np.argsort(y_pred_matrix, axis=1)[:, -10:][:, ::-1]
-    else:
-        raise ValueError(f"Unknown model type: {model_type}")
+    def calculate_ndcg(recommended_items, true_items, k):
+        dcg = 0.0
+        for i, item in enumerate(recommended_items):
+            if item in true_items:
+                dcg += 1 / np.log2(i + 2)  # i+2 because of 0-based index and log base 2
+        idcg = sum([1 / np.log2(i + 2) for i in range(min(len(true_items), k))])
+        return dcg / idcg if idcg > 0 else 0
 
-    # Calculate precision, recall, and ndcg at k=10
-    precision = np.mean([precision_at_k(y_pred[i], y_test.iloc[i], 10) for i in range(len(y_test))])
-    recall = np.mean([recall_at_k(y_pred[i], y_test.iloc[i], 10) for i in range(len(y_test))])
-    ndcg = np.mean([ndcg_at_k(y_pred[i], y_test.iloc[i], 10) for i in range(len(y_test))])
+    def precision_recall_f1_ndcg_at_k(model_func, k=10):
+        hits = 0
+        total_relevant = 0
+        total_recommended = 0
+        ndcg = 0.0
 
-    return precision, recall, ndcg
+        user_groups = test_data.groupby('userId')
+
+        for user_id, group in user_groups:
+            true_items = set(group.movieId.values)
+            recommended_items = set(model_func(user_id, k))
+
+            hits += len(true_items & recommended_items)
+            total_relevant += len(true_items)
+            total_recommended += len(recommended_items)
+
+            ndcg += calculate_ndcg(recommended_items, true_items, k)
+
+        precision = hits / total_recommended if total_recommended > 0 else 0
+        recall = hits / total_relevant if total_relevant > 0 else 0
+        f1 = (2 * precision * recall) / (precision + recall) if precision + recall > 0 else 0
+        avg_ndcg = ndcg / len(user_groups)
+
+        return precision, recall, f1, avg_ndcg
+
+    results = {}
+    results['user_cf'] = precision_recall_f1_ndcg_at_k(lambda user_id, n: user_cf_recs[user_id], k=10)
+    results['item_cf'] = precision_recall_f1_ndcg_at_k(lambda user_id, n: item_cf_recs[user_id], k=10)
+    results['svd'] = precision_recall_f1_ndcg_at_k(lambda user_id, n: svd_recs[user_id], k=10)
+    results['content_based'] = precision_recall_f1_ndcg_at_k(lambda user_id, n: content_recs[user_id], k=10)
+    results['hybrid'] = precision_recall_f1_ndcg_at_k(lambda user_id, n: user_cf_recs[user_id] + item_cf_recs[user_id] + svd_recs[user_id] + content_recs[user_id], k=10)
+
+    return results
