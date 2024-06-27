@@ -1,57 +1,50 @@
 from zenml import step
-from typing import Dict, Any
-import pandas as pd
+from surprise import accuracy
+from collections import defaultdict
 
 @step
-def evaluate_model(
-    train_data: pd.DataFrame,
-    test_data: pd.DataFrame,
-    user_cf_recs: Dict[int, Any],
-    item_cf_recs: Dict[int, Any],
-    svd_recs: Dict[int, Any],
-    content_recs: Dict[int, Any]
-) -> Dict[str, Any]:
-    
+def evaluate_model(svd_model, knn_model, baseline_model, test_data):
+    def precision_recall_at_k(predictions, k=10, threshold=3.5):
+        user_est_true = defaultdict(list)
+        for uid, iid, true_r, est, _ in predictions:
+            user_est_true[uid].append((est, true_r))
 
+        precisions = dict()
+        recalls = dict()
 
-    def calculate_ndcg(recommended_items, true_items, k):
-        dcg = 0.0
-        for i, item in enumerate(recommended_items):
-            if item in true_items:
-                dcg += 1 / np.log2(i + 2)  # i+2 because of 0-based index and log base 2
-        idcg = sum([1 / np.log2(i + 2) for i in range(min(len(true_items), k))])
-        return dcg / idcg if idcg > 0 else 0
+        for uid, user_ratings in user_est_true.items():
+            user_ratings.sort(key=lambda x: x[0], reverse=True)
+            n_rel = sum((true_r >= threshold) for (_, true_r) in user_ratings)
+            n_rec_k = sum((est >= threshold) for (est, _) in user_ratings[:k])
+            n_rel_and_rec_k = sum(((true_r >= threshold) and (est >= threshold))
+                                  for (est, true_r) in user_ratings[:k])
+            precisions[uid] = n_rel_and_rec_k / n_rec_k if n_rec_k != 0 else 1
+            recalls[uid] = n_rel_and_rec_k / n_rel if n_rel != 0 else 1
 
-    def precision_recall_f1_ndcg_at_k(model_func, k=10):
-        hits = 0
-        total_relevant = 0
-        total_recommended = 0
-        ndcg = 0.0
+        precision = sum(prec for prec in precisions.values()) / len(precisions)
+        recall = sum(rec for rec in recalls.values()) / len(recalls)
+        return precision, recall
 
-        user_groups = test_data.groupby('userId')
+    # Evaluate SVD model
+    svd_predictions = svd_model.test(test_data)
+    svd_rmse = accuracy.rmse(svd_predictions, verbose=False)
+    svd_mae = accuracy.mae(svd_predictions, verbose=False)
+    svd_precision, svd_recall = precision_recall_at_k(svd_predictions)
 
-        for user_id, group in user_groups:
-            true_items = set(group.movieId.values)
-            recommended_items = set(model_func(user_id, k))
+    print(f'SVD Model - RMSE: {svd_rmse}, MAE: {svd_mae}, Precision at K: {svd_precision}, Recall at K: {svd_recall}')
 
-            hits += len(true_items & recommended_items)
-            total_relevant += len(true_items)
-            total_recommended += len(recommended_items)
+    # Evaluate KNN model
+    knn_predictions = knn_model.test(test_data)
+    knn_rmse = accuracy.rmse(knn_predictions, verbose=False)
+    knn_mae = accuracy.mae(knn_predictions, verbose=False)
+    knn_precision, knn_recall = precision_recall_at_k(knn_predictions)
 
-            ndcg += calculate_ndcg(recommended_items, true_items, k)
+    print(f'KNN Model - RMSE: {knn_rmse}, MAE: {knn_mae}, Precision at K: {knn_precision}, Recall at K: {knn_recall}')
 
-        precision = hits / total_recommended if total_recommended > 0 else 0
-        recall = hits / total_relevant if total_relevant > 0 else 0
-        f1 = (2 * precision * recall) / (precision + recall) if precision + recall > 0 else 0
-        avg_ndcg = ndcg / len(user_groups)
+    # Evaluate Baseline model
+    baseline_predictions = baseline_model.test(test_data)
+    baseline_rmse = accuracy.rmse(baseline_predictions, verbose=False)
+    baseline_mae = accuracy.mae(baseline_predictions, verbose=False)
+    baseline_precision, baseline_recall = precision_recall_at_k(baseline_predictions)
 
-        return precision, recall, f1, avg_ndcg
-
-    results = {}
-    results['user_cf'] = precision_recall_f1_ndcg_at_k(lambda user_id, n: user_cf_recs[user_id], k=10)
-    results['item_cf'] = precision_recall_f1_ndcg_at_k(lambda user_id, n: item_cf_recs[user_id], k=10)
-    results['svd'] = precision_recall_f1_ndcg_at_k(lambda user_id, n: svd_recs[user_id], k=10)
-    results['content_based'] = precision_recall_f1_ndcg_at_k(lambda user_id, n: content_recs[user_id], k=10)
-    results['hybrid'] = precision_recall_f1_ndcg_at_k(lambda user_id, n: user_cf_recs[user_id] + item_cf_recs[user_id] + svd_recs[user_id] + content_recs[user_id], k=10)
-
-    return results
+    print(f'Baseline Model - RMSE: {baseline_rmse}, MAE: {baseline_mae}, Precision at K: {baseline_precision}, Recall at K: {baseline_recall}')
