@@ -6,15 +6,12 @@ from typing import Tuple
 
 
 @step
-def split_data(dataset:pd.DataFrame, label: str) -> Tuple[
-    Annotated[pd.DataFrame,"X_train"],
-    Annotated[pd.DataFrame,"X_test"],
-    Annotated[pd.Series,"y_train"],
-    Annotated[pd.Series,"y_test"]]:
+def split_data(dataset: pd.DataFrame) -> Tuple[
+    Annotated[pd.DataFrame, "train_data"],
+    Annotated[pd.DataFrame, "test_data"]]:
+    
     """
-    Splits a dataset into training and testing sets, separating features from the target label.
+    Splits a dataset into training and testing sets.
     """
-    X = dataset.drop(label,axis=1)
-    Y = dataset[label]
-    X_train,X_test,y_train,y_test = train_test_split(X,Y,test_size=0.2,shuffle=False)
-    return X_train,X_test,y_train,y_test
+    train_data, test_data = train_test_split(dataset, test_size=0.2, shuffle=True, random_state=42)
+    return train_data, test_data

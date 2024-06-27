@@ -4,31 +4,40 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import TruncatedSVD
 from sklearn.impute import SimpleImputer
+from sklearn.base import TransformerMixin
 from sklearn.preprocessing import MultiLabelBinarizer
 import pandas as pd
-from zenml.steps import step
+from zenml import step
 
-# Custom transformers if necessary
-class MultiLabelBinarizerWrapper:
-    def fit(self, X, y=None):
+class DictionaryExtractor(TransformerMixin):
+    """Extracts names from a list of dictionaries within DataFrame columns and binarizes them."""
+    def __init__(self, key='name'):
+        self.key = key
         self.mlb = MultiLabelBinarizer()
-        self.mlb.fit(X)
+    
+    def fit(self, X, y=None):
+        # Aggregate all names from the dictionaries across all rows to fit the MultiLabelBinarizer
+        names = [item[self.key] for sublist in X for item in sublist if self.key in item]
+        self.mlb.fit([names])
         return self
 
     def transform(self, X):
-        return self.mlb.transform(X)
+        # Transform each list of dictionaries to a list of names
+        transformed = X.apply(lambda sublist: [item[self.key] for item in sublist if self.key in item])
+        return self.mlb.transform(transformed)
+
 
 @step
-def create_preprocessing_pipeline():
+def create_preprocessing_pipeline(dataset: pd.DataFrame) -> Pipeline:
     # Numeric features preprocessing
-    numeric_features = dataset[['popularity', 'revenue', 'runtime', 'vote_average', 'vote_count',"average_rating","rating_count"]]
+    numeric_features = dataset[['popularity', 'revenue', 'runtime', 'vote_average', 'vote_count',"user_average_rating","user_rating_count","rating","weighted_rating","user_average_rating","user_rating_count"]]
     numeric_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler())
     ])
     
     # Categorical features preprocessing
-    categorical_features = ['original_language', 'status']
+    categorical_features = dataset[['original_language', 'status']]
     categorical_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='most_frequent')),
         ("encoder",OneHotEncoder(sparse_output=False,handle_unknown="ignore"))
@@ -36,15 +45,15 @@ def create_preprocessing_pipeline():
 
     # Complex encoded features
     complex_features = ['genres', 'production_companies', 'production_countries']
-    complex_transformer = Pipeline(steps=[
-        ('extractor', MultiLabelBinarizerWrapper()),  # Assuming proper extraction function is implemented
+    complex_transformer = Pipeline([
+    ('extractor_and_binarizer', DictionaryExtractor()),  # Handles extraction and binarization in one step
     ])
     
     # Text features preprocessing
-    text_features = ['title', 'overview']
+    text_features = dataset[['title', 'overview']]
     text_transformer = Pipeline(steps=[
         ('tfidf', TfidfVectorizer(stop_words='english')),
-        ('svd', TruncatedSVD(n_components=1000))  # Dimensionality reduction
+        ('svd', TruncatedSVD(n_components=100))  # Dimensionality reduction
     ])
     
     # Combine all transformers
