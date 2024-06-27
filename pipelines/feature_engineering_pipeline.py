@@ -1,5 +1,4 @@
-from steps import load_movie_data,clean_movie_data,load_rating_data,preprocess_rating_data,split_data
-import pandas as pd
+from steps import load_movie_data,clean_movie_data,load_rating_data,preprocess_rating_data,merged_data,split_data,create_preprocessing_pipeline,feature_preprocessor
 from zenml import pipeline
 
 """
@@ -19,11 +18,11 @@ def feature_engineering_pipeline():
     raw_users = load_rating_data("./data/ratings_small.csv")
     users = preprocess_rating_data(raw_users)
 
-    dataset = pd.merge(movies, users, left_on='id', right_on='movieId', how='inner')
+    dataset = merged_data(movies,users)
 
-    X_train,X_test,y_train,y_test = split_data(dataset,"rating")
-  #  pipeline = create_preprocessing_pipeline(dataset,"rating")
-    #X_train,X_test,pipeline = feature_preprocessor(pipeline,X_train,X_test)
+    train_data,test_data = split_data(dataset)
+    pipeline = create_preprocessing_pipeline(dataset)
+    train_data,test_data,pipeline = feature_preprocessor(pipeline,train_data,test_data)
    # y_train,y_test = label_encoding(y_train,y_test)
 
     # Clean data

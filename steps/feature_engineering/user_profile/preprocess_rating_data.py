@@ -1,9 +1,11 @@
 import pandas as pd
 from zenml import step
+from typing_extensions import Annotated
+
 
 
 @step
-def preprocess_rating_data(ratings: pd.DataFrame) -> pd.DataFrame:
+def preprocess_rating_data(ratings: pd.DataFrame) -> Annotated[pd.DataFrame,"processed_ratings"]:
     """
     Process rating data by converting timestamps and computing user-specific statistics.
     
@@ -19,8 +21,8 @@ def preprocess_rating_data(ratings: pd.DataFrame) -> pd.DataFrame:
     
     # Compute user statistics
     user_stats = ratings.groupby('userId').agg(
-        average_rating=pd.NamedAgg(column='rating', aggfunc='mean'),
-        rating_count=pd.NamedAgg(column='rating', aggfunc='count')
+        user_average_rating=pd.NamedAgg(column='rating', aggfunc='mean'),
+        user_rating_count=pd.NamedAgg(column='rating', aggfunc='count')
     )
     
     # Merge user statistics back to ratings
