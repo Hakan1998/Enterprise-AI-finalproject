@@ -30,14 +30,14 @@ class DictionaryExtractor(TransformerMixin):
 @step
 def create_preprocessing_pipeline(dataset: pd.DataFrame) -> Pipeline:
     # Numeric features preprocessing
-    numeric_features = dataset[['popularity', 'revenue', 'runtime', 'vote_average', 'vote_count',"user_average_rating","user_rating_count","rating","weighted_rating","user_average_rating","user_rating_count"]]
+    numeric_features = dataset[['popularity', 'revenue', 'runtime', 'vote_average', 'vote_count',"user_average_rating","user_rating_count","rating","weighted_rating"]]
     numeric_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler())
     ])
     
     # Categorical features preprocessing
-    categorical_features = dataset[['original_language', 'status']]
+    categorical_features = dataset[['original_language', 'status',"id","userId"]]
     categorical_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='most_frequent')),
         ("encoder",OneHotEncoder(sparse_output=False,handle_unknown="ignore"))
