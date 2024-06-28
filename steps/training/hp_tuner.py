@@ -1,46 +1,37 @@
 from zenml import step
-from surprise import SVD, KNNBasic, BaselineOnly
+from surprise import Dataset, KNNBasic, SVD, BaselineOnly
 from surprise.model_selection import GridSearchCV
-from typing import Tuple
+from typing import Tuple, Dict
 
 @step
-def hp_tuner(train_data) -> Tuple[dict, dict, dict]:
-    # Define hyperparameter grids
+def hp_tuner(dataset: Dataset) -> Tuple[Dict, Dict, Dict]:
     param_grid_svd = {
-        'n_factors': [20, 50, 100],
-        'lr_all': [0.002, 0.005, 0.01],
-        'reg_all': [0.02, 0.05, 0.1]
+        'n_epochs': [20, 30],
+        'lr_all': [0.002, 0.005],
+        'reg_all': [0.4, 0.6]
     }
-
     param_grid_knn = {
-        'k': [20, 40, 60],
-        'min_k': [1, 3, 5],
+        'k': [20, 30],
         'sim_options': {
-            'name': ['msd', 'cosine', 'pearson'],
-            'user_based': [False, True]
+            'name': ['msd', 'cosine'],
+            'user_based': [False]
         }
     }
-
     param_grid_baseline = {
         'bsl_options': {
             'method': ['als', 'sgd'],
-            'n_epochs': [5, 10, 20],
-            'reg_u': [12, 15, 18],
-            'reg_i': [5, 10, 15]
+            'n_epochs': [5, 10]
         }
     }
 
-    # Perform grid search for each algorithm
-    gs_svd = GridSearchCV(SVD, param_grid_svd, measures=['rmse', 'mae'], cv=3)
-    gs_svd.fit(train_data)
+    gs_svd = GridSearchCV(SVD, param_grid_svd, measures=['rmse'], cv=3)
+    gs_knn = GridSearchCV(KNNBasic, param_grid_knn, measures=['rmse'], cv=3)
+    gs_baseline = GridSearchCV(BaselineOnly, param_grid_baseline, measures=['rmse'], cv=3)
 
-    gs_knn = GridSearchCV(KNNBasic, param_grid_knn, measures=['rmse', 'mae'], cv=3)
-    gs_knn.fit(train_data)
+    gs_svd.fit(dataset)
+    gs_knn.fit(dataset)
+    gs_baseline.fit(dataset)
 
-    gs_baseline = GridSearchCV(BaselineOnly, param_grid_baseline, measures=['rmse', 'mae'], cv=3)
-    gs_baseline.fit(train_data)
-
-    # Get best parameters
     best_params_svd = gs_svd.best_params['rmse']
     best_params_knn = gs_knn.best_params['rmse']
     best_params_baseline = gs_baseline.best_params['rmse']
