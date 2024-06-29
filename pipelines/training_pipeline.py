@@ -5,7 +5,7 @@ from steps.training.evaluate_model import evaluate_model
 from steps.training.convert_to_surprise_format import convert_to_surprise_format
 from steps.feature_engineering.loading_data import loading_data
 
-@pipeline
+@pipeline(enable_cache=False)
 def training_pipeline():
     # Load data
     raw_train_data, raw_test_data = loading_data()
@@ -15,10 +15,23 @@ def training_pipeline():
     dataset, trainset, test_data = convert_to_surprise_format(raw_train_data=raw_train_data, raw_test_data=raw_test_data)
     print("2..step")
     # Perform hyperparameter tuning
-    best_params_svd, best_params_knn, best_params_baseline = hp_tuner(dataset=dataset)
+    best_params_svd, best_params_knn, best_params_baseline, best_params_content = hp_tuner(dataset=dataset, raw_train_data=raw_train_data)
     print("3..step")
     # Train models with the best hyperparameters
-    svd_model, knn_model, baseline_model = model_trainer(train_data=trainset, best_params_svd=best_params_svd, best_params_knn=best_params_knn, best_params_baseline=best_params_baseline)
+    svd_model, knn_model, baseline_model, content_model = model_trainer(
+        train_data=trainset, 
+        raw_train_data=raw_train_data,
+        best_params_svd=best_params_svd, 
+        best_params_knn=best_params_knn, 
+        best_params_baseline=best_params_baseline,
+        best_params_content=best_params_content
+    )
     print("4..step")
     # Evaluate the trained models
-    evaluate_model(svd_model=svd_model, knn_model=knn_model, baseline_model=baseline_model, test_data=test_data)
+    evaluate_model(
+        svd_model=svd_model, 
+        knn_model=knn_model, 
+        baseline_model=baseline_model, 
+        content_model=content_model, 
+        raw_test_data=raw_test_data
+    )
