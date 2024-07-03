@@ -23,13 +23,4 @@ def feature_engineering_pipeline():
     train_data,test_data = split_data(dataset)
     pipeline = create_preprocessing_pipeline(dataset)
     train_data,test_data,pipeline = feature_preprocessor(pipeline,train_data,test_data)
-   # y_train,y_test = label_encoding(y_train,y_test)
 
-    # Clean data
-
-    #dataset = pd.merge(movies, users, left_on='id', right_on='movieId', how='inner')
-#
- #   X_train,X_test,y_train,y_test = split_data(dataset,"rating")
-  #  pipeline = create_preprocessing_pipeline(dataset,"rating")
-    #X_train,X_test,pipeline = feature_preprocessor(pipeline,X_train,X_test)
-   # y_train,y_test = label_encoding(y_train,y_test)
