@@ -1,9 +1,48 @@
-from zenml import step
-from surprise import SVD, KNNBasic, BaselineOnly, Trainset
+import pandas as pd
+import re
+import string
+from bs4 import BeautifulSoup
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
-from typing import Tuple, Dict, Any
-import pandas as pd
+from scipy.sparse import hstack
+from surprise import SVD, KNNBasic, BaselineOnly, Trainset
+from typing import Dict, Any, Tuple
+from zenml import step
+
+# Ensure nltk data is downloaded
+import nltk
+nltk.download('stopwords')
+nltk.download('wordnet')
+
+# Initialize the lemmatizer
+lemmatizer = WordNetLemmatizer()
+
+def preprocess_text(text: str) -> str:
+    # Convert to lowercase
+    text = text.lower()
+    
+    # Remove HTML tags
+    text = BeautifulSoup(text, "html.parser").get_text()
+    
+    # Remove punctuation
+    text = text.translate(str.maketrans("", "", string.punctuation))
+    
+    # Remove numbers
+    text = re.sub(r'\d+', '', text)
+    
+    # Remove stopwords and lemmatize
+    stop_words = set(stopwords.words('english'))
+    words = text.split()
+    cleaned_words = [lemmatizer.lemmatize(word) for word in words if word not in stop_words]
+    
+    # Join the cleaned words back into a single string
+    cleaned_text = " ".join(cleaned_words)
+    
+    return cleaned_text
+
+
 
 @step(enable_cache=False)
 def model_trainer(
@@ -12,27 +51,10 @@ def model_trainer(
     best_params_svd: Dict[str, Any], 
     best_params_knn: Dict[str, Any], 
     best_params_baseline: Dict[str, Any], 
-    best_params_content: Dict[str, Any]
+    content_model_params: Dict[str, Any]
 ) -> Tuple[SVD, KNNBasic, BaselineOnly, Dict[str, Any]]:
-    """
-    Train multiple models (SVD, KNN, Baseline, Content-based) using the best hyperparameters and return the trained models.
-
-    Args:
-        train_data (Trainset): The Surprise trainset object used for training collaborative filtering models.
-        raw_train_data (pd.DataFrame): The raw training data containing 'userId', 'movieId', 'rating', and 'genres' columns.
-        best_params_svd (Dict[str, Any]): Best hyperparameters for the SVD model.
-        best_params_knn (Dict[str, Any]): Best hyperparameters for the KNN model.
-        best_params_baseline (Dict[str, Any]): Best hyperparameters for the Baseline model.
-        best_params_content (Dict[str, Any]): Best hyperparameters for the content-based model.
-
-    Returns:
-        Tuple[SVD, KNNBasic, BaselineOnly, Dict[str, Any]]:
-            - SVD: The trained SVD model.
-            - KNNBasic: The trained KNN model.
-            - BaselineOnly: The trained Baseline model.
-            - Dict[str, Any]: The trained content-based model containing the TF-IDF matrix and cosine similarity matrix.
-    """
-    # Train Collaborative Filtering Models
+    
+    # Train collaborative filtering models
     svd = SVD(**best_params_svd)
     knn = KNNBasic(**best_params_knn)
     baseline = BaselineOnly(**best_params_baseline)
@@ -41,12 +63,24 @@ def model_trainer(
     knn.fit(train_data)
     baseline.fit(train_data)
 
-    # Ensure that ngram_range is passed as a tuple
-    best_params_content['ngram_range'] = tuple(best_params_content['ngram_range'])
+    # Ensure ngram_range is a tuple
+    content_model_params['ngram_range'] = tuple(content_model_params['ngram_range'])
 
-    # Train Content-based Filtering using TF-IDF on genres with best hyperparameters
-    tfidf = TfidfVectorizer(stop_words='english', **best_params_content)
-    tfidf_matrix = tfidf.fit_transform(raw_train_data['budget'])
+    # Combine 'title', 'tagline', and 'overview' into one text column
+    raw_train_data['combined_text'] = (
+        raw_train_data['title'].fillna('') + ' ' +
+        raw_train_data['tagline'].fillna('') + ' ' +
+        raw_train_data['overview'].fillna('')
+    )
+
+    # Preprocess the combined text
+    raw_train_data['cleaned_text'] = raw_train_data['combined_text'].apply(preprocess_text)
+
+    # Create TF-IDF matrix for 'cleaned_text'
+    tfidf = TfidfVectorizer(stop_words='english', **content_model_params)
+    tfidf_matrix = tfidf.fit_transform(raw_train_data['cleaned_text'])
+
+    # Compute cosine similarity on the TF-IDF matrix
     cosine_sim = linear_kernel(tfidf_matrix, tfidf_matrix)
 
     content_model = {

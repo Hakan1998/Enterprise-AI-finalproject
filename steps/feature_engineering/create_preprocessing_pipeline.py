@@ -10,11 +10,12 @@ from typing import Tuple
 @step
 def create_preprocessing_pipeline(dataset: pd.DataFrame) -> Pipeline:
     # Columns that should not be transformed
-    passthrough_columns = ['rating', 'id', 'userId', 'overview']
+    passthrough_columns = ['rating', 'id', 'userId', 'overview', "title", "tagline"]
     
     # Identify numerical and categorical features
     numerical_features = [col for col in dataset.select_dtypes(exclude=['object']).columns if col not in passthrough_columns]
-    categorical_features = dataset.select_dtypes(include=['object']).columns.tolist()
+    categorical_features = [col for col in dataset.select_dtypes(include=['object']).columns if col not in passthrough_columns]
+
 
     # Create transformers for numeric and categorical features
     numeric_transformer = Pipeline([

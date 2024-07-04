@@ -8,7 +8,7 @@ from sklearn.compose import ColumnTransformer
 @step
 def clean_movie_data(data: pd.DataFrame) -> Annotated[pd.DataFrame,"clean_data"]:
     """Clean data by dropping unnecessary columns,rows . fill missing data"""
-    columns_to_drop = ["adult", "homepage","imdb_id","video","spoken_languages","tagline","poster_path","original_title","belongs_to_collection","release_date","production_companies","production_countries","genres","title"]
+    columns_to_drop = ["adult", "homepage","imdb_id","video","spoken_languages","poster_path","original_title","belongs_to_collection","release_date","production_companies","production_countries","genres"]
     data = data.drop(columns=columns_to_drop, errors='ignore')
     print("der Datentyp ist:")
 
