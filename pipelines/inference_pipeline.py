@@ -15,21 +15,21 @@ from .feature_engineering_pipeline import (
 )
 
 from .training_pipeline import convert_to_surprise_format, hp_tuner, model_trainer
-from steps.inference.get_recommendations import get_model_recommendations
+from steps.inference.get_recommendations import make_predictions
 
 @pipeline(enable_cache=False)
 def inference_pipeline():
 
 
-    raw_movies = load_movie_data()
+    raw_movies = load_movie_data("./data/movies_metadata.csv")
     movies = clean_movie_data(raw_movies)
-    raw_users = load_rating_data()
+    raw_users = load_rating_data("./data/inference_ratings.csv")
     users = preprocess_rating_data(raw_users)
 
     dataset = merged_data(movies, users)
 
     train_data, test_data = split_data(dataset)
-    preprocessing_pipeline = create_preprocessing_pipeline(dataset)
+    pipeline = create_preprocessing_pipeline(dataset)
     train_data,test_data,pipeline = feature_preprocessor(pipeline,train_data,test_data)
 
     # Die folgenden Zeilen sind dazu da, sicherzustellen, dass die korrekten Versionen der trainierten Daten verwendet werden
@@ -58,5 +58,7 @@ def inference_pipeline():
         content_model=content_model, 
         raw_test_data=raw_test_data
     )
-
+    
+    print(recommendations)
+    
     return recommendations

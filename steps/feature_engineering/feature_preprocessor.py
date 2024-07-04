@@ -41,7 +41,5 @@ def feature_preprocessor(
     # Convert the transformed data back to DataFrames with new feature names
     train_data_preprocessed = pd.DataFrame(train_data_transformed, columns=feature_names)
     test_data_preprocessed = pd.DataFrame(test_data_transformed, columns=feature_names)
-    pd.set_option('display.max_columns', None)
-    print(train_data_preprocessed)
 
     return train_data_preprocessed, test_data_preprocessed, pipeline

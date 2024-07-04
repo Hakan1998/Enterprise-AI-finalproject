@@ -15,6 +15,6 @@ def merged_data(clean_data: pd.DataFrame, processed_ratings: pd.DataFrame) -> An
     merged_data = pd.merge(clean_data, processed_ratings, left_on='id', right_on='movieId', how='inner')
     # Drop the 'movieId' column from the merged DataFrame as it is redundant with 'id'
     merged_data.drop(columns='movieId', inplace=True)
-    merged_data = merged_data.sample(n=1000, random_state=42)
-    print(merged_data)
+    merged_data = merged_data.sample(n=5000, random_state=42)
+
     return merged_data
