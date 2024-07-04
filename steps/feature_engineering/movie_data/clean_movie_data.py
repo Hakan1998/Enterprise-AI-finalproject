@@ -8,7 +8,7 @@ from sklearn.compose import ColumnTransformer
 @step(enable_cache=False)
 def clean_movie_data(data: pd.DataFrame) -> Annotated[pd.DataFrame,"clean_data"]:
     """Clean data by dropping unnecessary columns,rows . fill missing data"""
-    columns_to_drop = ["adult", "homepage","imdb_id","video","spoken_languages","poster_path","original_title","belongs_to_collection","release_date","production_companies","production_countries","genres"]
+    columns_to_drop = ["adult", "homepage","imdb_id","video","spoken_languages","poster_path","original_title","belongs_to_collection","release_date","production_companies","production_countries","genres", "popularity", "budget"]
     data = data.drop(columns=columns_to_drop, errors='ignore')
 
     
@@ -18,8 +18,7 @@ def clean_movie_data(data: pd.DataFrame) -> Annotated[pd.DataFrame,"clean_data"]
     
     # Calculate mean rating across all movies
     C = data['vote_average'].mean()
-    data['popularity'] = pd.to_numeric(data['popularity'], errors='coerce')
-    data['budget'] = pd.to_numeric(data['budget'], errors='coerce')
+
     # Calculate the minimum number of votes required to be listed (e.g., 90th percentile)
     m = data['vote_count'].quantile(0.90)
 

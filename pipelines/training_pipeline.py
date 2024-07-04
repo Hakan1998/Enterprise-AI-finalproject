@@ -16,6 +16,7 @@ def training_pipeline():
     dataset, trainset, test_data = convert_to_surprise_format(raw_train_data=raw_train_data, raw_test_data=raw_test_data)
     best_params_svd, best_params_knn, best_params_baseline, content_model_params = hp_tuner(dataset=dataset, raw_train_data=raw_train_data)
     svd_model, knn_model, baseline_model, content_model = model_trainer(
+        
         train_data=trainset, 
         raw_train_data=raw_train_data,
         best_params_svd=best_params_svd, 

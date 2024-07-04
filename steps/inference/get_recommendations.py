@@ -4,7 +4,6 @@ from collections import defaultdict
 from surprise import accuracy
 from zenml import step
 
-
 def precision_recall_at_k(predictions: List[Tuple], k: int = 10, threshold: float = 3.5) -> Tuple[float, float]:
     user_est_true = defaultdict(list)
     for uid, iid, true_r, est, _ in predictions:
