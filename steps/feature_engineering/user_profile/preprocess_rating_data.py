@@ -4,7 +4,7 @@ from typing_extensions import Annotated
 
 
 
-@step
+@step(enable_cache=False)
 def preprocess_rating_data(ratings: pd.DataFrame) -> Annotated[pd.DataFrame,"processed_ratings"]:
     """
     Process rating data by converting timestamps and computing user-specific statistics.
@@ -18,7 +18,6 @@ def preprocess_rating_data(ratings: pd.DataFrame) -> Annotated[pd.DataFrame,"pro
     """
     # drop timestamp column
     ratings.drop(columns=['timestamp'], inplace=True)
-    
     # Compute user statistics
     user_stats = ratings.groupby('userId').agg(
         user_average_rating=pd.NamedAgg(column='rating', aggfunc='mean'),
