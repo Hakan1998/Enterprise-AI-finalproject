@@ -72,7 +72,7 @@ def evaluate_content_based(raw_test_data: pd.DataFrame, cosine_sim: Any, k: int 
     return precision, recall
 
 
-@step
+@step(enable_cache=False)
 def evaluate_model(
     svd_model: Any, knn_model: Any, baseline_model: Any, content_model: Dict[str, Any], raw_test_data: pd.DataFrame, k: int = 10
 ) -> Tuple[float, float, float, float, float, float, float, float, float, float, float, float, float, float]:

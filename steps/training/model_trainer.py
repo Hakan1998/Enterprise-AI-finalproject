@@ -52,6 +52,7 @@ def model_trainer(
     best_params_knn: Dict[str, Any], 
     best_params_baseline: Dict[str, Any], 
     content_model_params: Dict[str, Any]
+
 ) -> Tuple[SVD, KNNBasic, BaselineOnly, Dict[str, Any]]:
     svd = SVD(**best_params_svd)
     knn = KNNBasic(**best_params_knn)
@@ -89,5 +90,7 @@ def model_trainer(
         'combined_features': combined_features,
         'cosine_sim': cosine_sim
     }
+
+    
 
     return svd, knn, baseline, content_model

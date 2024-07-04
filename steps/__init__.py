@@ -16,5 +16,4 @@ from .training.convert_to_surprise_format import convert_to_surprise_format
 from .training.hp_tuner import hp_tuner
 from steps.utils import compute_similarity_matrix
 
-#from .inference import load_inference_rating
 

@@ -1,33 +1,64 @@
 from zenml import pipeline
 from zenml.client import Client
-from steps.inference.load_inference_rating import load_inference_rating
-from steps.feature_engineering.feature_preprocessor import feature_preprocessor
-#from steps.training.model_trainer import load_trained_models
-from steps.inference.make_predictions import make_predictions
+from zenml import steps
+import pandas as pd
 
-@pipeline(enable_cache=False)
+from .feature_engineering_pipeline import (
+    load_movie_data,
+    clean_movie_data,
+    load_rating_data,
+    preprocess_rating_data,
+    merged_data,
+    split_data,
+    create_preprocessing_pipeline,
+    feature_preprocessor
+)
+
+from .training_pipeline import convert_to_surprise_format, evaluate_model,hp_tuner, model_trainer
+from steps.inference.get_recommendations import get_model_recommendations
 def inference_pipeline():
+
+    def diagnose_data_types(data: pd.DataFrame):
+        print(dataset.dtypes)
+
+
+    raw_movies = load_movie_data("./data/movies_metadata.csv")
+    movies = clean_movie_data(raw_movies)
+    raw_users = load_rating_data("./data/inference_ratings.csv")
+    users = preprocess_rating_data(raw_users)
+
+    dataset = merged_data(movies,users)
+
+    # Diagnose der Datentypen vor dem Preprocessing
+    diagnose_data_types(dataset)
+
+    train_data,test_data = split_data(dataset)
+    pipeline = create_preprocessing_pipeline(dataset)
+    train_data,test_data,pipeline = feature_preprocessor(pipeline,train_data,test_data)
+
     client = Client()
+    train_data = client.get_artifact_version("train_data_preprocessed")
+    test_data = client.get_artifact_version("test_data_preprocessed")
+    raw_train_data = train_data
+    raw_test_data = test_data
 
-    # Load the preprocessed data for inference
-    raw_inference_data = load_inference_rating("./data/inference_ratings.csv")
-    
-    # Load the feature preprocessing pipeline from previous steps
-    preprocessing_pipeline = client.get_pipeline("feature_engineering_pipeline")
+    dataset, trainset, test_data = convert_to_surprise_format(raw_train_data=raw_train_data, raw_test_data=raw_test_data)
+    best_params_svd, best_params_knn, best_params_baseline, content_model_params = hp_tuner(dataset=dataset, raw_train_data=raw_train_data)
+    svd_model, knn_model, baseline_model, content_model = model_trainer(
+        train_data=trainset, 
+        raw_train_data=raw_train_data,
+        best_params_svd=best_params_svd, 
+        best_params_knn=best_params_knn, 
+        best_params_baseline=best_params_baseline,
+        content_model_params=content_model_params
+    )
 
-    # Preprocess the inference data
-    _, inference_data, _ = feature_preprocessor(preprocessing_pipeline, None, raw_inference_data)
-
-    # Load trained models
-    svd_model, knn_model, baseline_model, content_model = load_trained_models()
-
-    # Make predictions on the inference data
-    predictions = make_predictions(
+    recommendations = get_recommendations(
         svd_model=svd_model, 
         knn_model=knn_model, 
         baseline_model=baseline_model, 
         content_model=content_model, 
-        inference_data=inference_data
+        raw_test_data=raw_test_data
     )
 
-    return predictions
+    return recommendations

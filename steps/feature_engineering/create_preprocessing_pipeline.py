@@ -7,7 +7,8 @@ from zenml import step
 from typing_extensions import Annotated
 from typing import Tuple
 
-@step
+
+@step(enable_cache=False)
 def create_preprocessing_pipeline(dataset: pd.DataFrame) -> Pipeline:
     # Columns that should not be transformed
     passthrough_columns = ['rating', 'id', 'userId', 'overview', "title", "tagline"]

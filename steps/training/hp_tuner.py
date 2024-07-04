@@ -22,7 +22,7 @@ def tune_content_based(raw_train_data: pd.DataFrame) -> Dict[str, Any]:
     }
     return best_params
 
-@step(enable_cache=True)
+@step(enable_cache=False)
 def hp_tuner(dataset: Dataset, raw_train_data: pd.DataFrame) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
     param_grid_svd = {
         'n_epochs': [20, 30],
