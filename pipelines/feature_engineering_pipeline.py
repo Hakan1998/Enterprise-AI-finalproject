@@ -23,4 +23,3 @@ def feature_engineering_pipeline():
     train_data,test_data = split_data(dataset)
     pipeline = create_preprocessing_pipeline(dataset)
     train_data,test_data,pipeline = feature_preprocessor(pipeline,train_data,test_data)
-

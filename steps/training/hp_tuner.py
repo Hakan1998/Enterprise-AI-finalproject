@@ -4,6 +4,8 @@ from surprise.model_selection import GridSearchCV
 from sklearn.feature_extraction.text import TfidfVectorizer
 from typing import Tuple, Dict, Any
 import pandas as pd
+import numpy as np
+
 from sklearn.metrics.pairwise import linear_kernel
 
 
@@ -14,13 +16,13 @@ def perform_grid_search(model_class: Any, param_grid: Dict[str, Any], dataset: D
 
 def tune_content_based(raw_train_data: pd.DataFrame) -> Dict[str, Any]:
     best_params = {
-        'max_df': 0.7,
+        'max_df': 0.8,
         'min_df': 0.01,
-        'ngram_range': (1,3)  # Ensure this is a tuple
+        'ngram_range': (1,4)  # Ensure this is a tuple
     }
     return best_params
 
-@step(enable_cache=False)
+@step(enable_cache=True)
 def hp_tuner(dataset: Dataset, raw_train_data: pd.DataFrame) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
     param_grid_svd = {
         'n_epochs': [20, 30],

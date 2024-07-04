@@ -53,8 +53,6 @@ def model_trainer(
     best_params_baseline: Dict[str, Any], 
     content_model_params: Dict[str, Any]
 ) -> Tuple[SVD, KNNBasic, BaselineOnly, Dict[str, Any]]:
-    
-    # Train collaborative filtering models
     svd = SVD(**best_params_svd)
     knn = KNNBasic(**best_params_knn)
     baseline = BaselineOnly(**best_params_baseline)
@@ -67,24 +65,28 @@ def model_trainer(
     content_model_params['ngram_range'] = tuple(content_model_params['ngram_range'])
 
     # Combine 'title', 'tagline', and 'overview' into one text column
+    # Combine 'title', 'tagline', and 'overview' into one text column
     raw_train_data['combined_text'] = (
         raw_train_data['title'].fillna('') + ' ' +
         raw_train_data['tagline'].fillna('') + ' ' +
         raw_train_data['overview'].fillna('')
     )
 
-    # Preprocess the combined text
-    raw_train_data['cleaned_text'] = raw_train_data['combined_text'].apply(preprocess_text)
-
-    # Create TF-IDF matrix for 'cleaned_text'
+    # Create TF-IDF matrix for 'combined_text'
     tfidf = TfidfVectorizer(stop_words='english', **content_model_params)
-    tfidf_matrix = tfidf.fit_transform(raw_train_data['cleaned_text'])
+    tfidf_matrix = tfidf.fit_transform(raw_train_data['combined_text'])
 
-    # Compute cosine similarity on the TF-IDF matrix
-    cosine_sim = linear_kernel(tfidf_matrix, tfidf_matrix)
+    # Use only the numerical columns
+    #numerical_features = raw_train_data[['budget', 'revenue', 'runtime']].fillna(0).values
+
+    # Combine TF-IDF matrix with numerical features
+    combined_features = hstack([tfidf_matrix])
+
+    # Compute cosine similarity on the combined features
+    cosine_sim = linear_kernel(combined_features, combined_features)
 
     content_model = {
-        'tfidf_matrix': tfidf_matrix,
+        'combined_features': combined_features,
         'cosine_sim': cosine_sim
     }
 
