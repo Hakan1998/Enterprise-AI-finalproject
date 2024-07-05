@@ -4,10 +4,15 @@ from surprise.model_selection import GridSearchCV
 from typing import Tuple, Dict, Any, Annotated
 import pandas as pd
 
+
+"""Perform grid search to find the best hyperparameters for a given model."""
+
 def perform_grid_search(model_class: Any, param_grid: Dict[str, Any], dataset: Dataset) -> Dict[str, Any]:
     grid_search = GridSearchCV(model_class, param_grid, measures=['rmse'], cv=3)
     grid_search.fit(dataset)
     return grid_search.best_params['rmse']
+
+"""Tune hyperparameters for the content-based model."""
 
 def tune_content_based(raw_train_data: pd.DataFrame) -> Dict[str, Any]:
     best_params = {
@@ -17,18 +22,31 @@ def tune_content_based(raw_train_data: pd.DataFrame) -> Dict[str, Any]:
     }
     return best_params
 
+
+
+"""
+    Perform hyperparameter tuning for various models.
+
+    Args:
+        dataset: The surprise dataset for training.
+        raw_train_data: Raw training data in DataFrame format.
+
+    Returns:
+        A tuple containing the best hyperparameters for each model.
+"""  
+
 @step(enable_cache=False)
 def hp_tuner(
     dataset: Dataset, 
     raw_train_data: pd.DataFrame
 ) -> Tuple[
-    Annotated[Dict[str, Any], "SVD Model"],
-    Annotated[Dict[str, Any], "KNN Model"],
-    Annotated[Dict[str, Any], "Baseline Only Model"],
-    Annotated[Dict[str, Any], "Normal Predictor Model"],
-    Annotated[Dict[str, Any], "NMF Model"],
-    Annotated[Dict[str, Any], "Slope One Model"],
-    Annotated[Dict[str, Any], "Content-based Model"]
+    Annotated[Dict[str, Any], "SVD Model - best Hyperparameter"],
+    Annotated[Dict[str, Any], "KNN Model - best Hyperparameter"],
+    Annotated[Dict[str, Any], "Baseline - best Hyperparameter"],
+    Annotated[Dict[str, Any], "Normal Predictor Model - best Hyperparameter"],
+    Annotated[Dict[str, Any], "NMF Model - best Hyperparameter"],
+    Annotated[Dict[str, Any], "Slope One Model - best Hyperparameter"],
+    Annotated[Dict[str, Any], "Content-based Model - best Hyperparameter"]
 ]:
     param_grid_svd = {
         'n_epochs': [20, 30],

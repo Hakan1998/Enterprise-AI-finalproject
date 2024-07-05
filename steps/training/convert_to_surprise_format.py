@@ -1,10 +1,19 @@
 from surprise import Dataset, Reader, Trainset
-from typing import Tuple
+from typing import Tuple, Annotated
 import pandas as pd
 from zenml import step
 
-@step(enable_cache=False)
-def convert_to_surprise_format(raw_train_data: pd.DataFrame, raw_test_data: pd.DataFrame) -> Tuple[Dataset, Trainset, pd.Series]:
+@step
+def convert_to_surprise_format(
+    raw_train_data: pd.DataFrame, 
+    raw_test_data: pd.DataFrame
+) -> Tuple[
+    Annotated[Dataset, "Surprise Dataset"], 
+    Annotated[Trainset, "Surprise Trainset"], 
+    Annotated[pd.Series, "Test Data"]
+]:
+
+
     """
     Convert raw training and test data into the Surprise format for collaborative filtering models.
 

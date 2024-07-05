@@ -5,6 +5,17 @@ from surprise import accuracy
 from zenml import step
 
 def precision_recall_at_k(predictions: List[Tuple], k: int = 10, threshold: float = 3.5) -> Tuple[float, float]:
+    """
+    Calculate precision and recall at k for given predictions.
+
+    Args:
+        predictions: List of tuples containing user ID, item ID, true rating, estimated rating, and additional info.
+        k: Number of top predictions to consider.
+        threshold: Rating threshold to consider a recommendation relevant.
+
+    Returns:
+        Tuple containing precision and recall at k.
+    """
     user_est_true = defaultdict(list)
     for uid, iid, true_r, est, _ in predictions:
         user_est_true[uid].append((est, true_r))
@@ -26,6 +37,16 @@ def precision_recall_at_k(predictions: List[Tuple], k: int = 10, threshold: floa
     return precision, recall
 
 def get_model_recommendations(model: Any, test_data: List[Tuple]) -> List[Tuple]:
+    """
+    Generate recommendations for the given model and test data.
+
+    Args:
+        model: The recommendation model to generate predictions.
+        test_data: The test data as a list of tuples.
+
+    Returns:
+        List of tuples containing the recommendations.
+    """
     predictions = model.test(test_data)
     return predictions
 
@@ -41,6 +62,23 @@ def make_predictions(
     raw_test_data: pd.DataFrame, 
     k: int = 10
 ) -> Dict[str, Any]:
+    """
+    Generate and return predictions from multiple models.
+
+    Args:
+        svd_model: Trained SVD model.
+        knn_model: Trained KNN model.
+        baseline_model: Trained BaselineOnly model.
+        normal_model: Trained NormalPredictor model.
+        nmf_model: Trained NMF model.
+        slopeone_model: Trained SlopeOne model.
+        content_model: Trained content-based model.
+        raw_test_data: Raw test data in DataFrame format.
+        k: Number of top recommendations to consider.
+
+    Returns:
+        Dictionary containing the recommendations from all models.
+    """
     test_data_tuples = [(d['userId'], d['id'], d['rating']) for d in raw_test_data.to_dict(orient='records')]
 
     svd_recommendations = get_model_recommendations(svd_model, test_data_tuples)

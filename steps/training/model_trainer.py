@@ -20,16 +20,21 @@ nltk.download('wordnet')
 lemmatizer = WordNetLemmatizer()
 
 def preprocess_text(text: str) -> str:
-    # Convert to lowercase
+    """
+    Preprocess the input text by converting to lowercase, removing HTML tags, punctuation, numbers, stopwords, and lemmatizing the words.
+    Content Based filtering specific so its in the basic FE Pipeline.
+
+    Args:
+        text: The input text to preprocess.
+
+    Returns:
+        The cleaned and preprocessed text.
+    """
+    # Convert to lowercase, # Remove HTML tags, # Remove HTML tags, # Remove stopwords and lemmatize
+
     text = text.lower()
-    
-    # Remove HTML tags
     text = BeautifulSoup(text, "html.parser").get_text()
-    
-    # Remove punctuation
     text = text.translate(str.maketrans("", "", string.punctuation))
-    
-    # Remove numbers
     text = re.sub(r'\d+', '', text)
     
     # Remove stopwords and lemmatize
@@ -54,15 +59,33 @@ def model_trainer(
     best_params_slope_one: Dict[str, Any],
     content_model_params: Dict[str, Any]
 ) -> Tuple[
-  Annotated[SVD, "SVD Model"],
-  Annotated[KNNBasic, "KNN Model"],
-  Annotated[BaselineOnly, "Baseline Only Model"],
-  Annotated[NormalPredictor, "Normal Predictor Model"],
-  Annotated[NMF, "NMF Model"],
-  Annotated[SlopeOne, "Slope One Model"],
-  Annotated[Any, "Content-based Model"]
+    Annotated[SVD, "SVD Model"],
+    Annotated[KNNBasic, "KNN Model"],
+    Annotated[BaselineOnly, "Baseline Only Model"],
+    Annotated[NormalPredictor, "Normal Predictor Model"],
+    Annotated[NMF, "NMF Model"],
+    Annotated[SlopeOne, "Slope One Model"],
+    Annotated[Any, "Content-based Model"]
 ]:
+    """
+    Train various recommendation models from the Surprise Library and a content-based model using the provided hyperparameters.
+
+    Args:
+        train_data: The training data in the format expected by the surprise library.
+        raw_train_data: Raw training data in DataFrame format.
+        best_params_svd: Best hyperparameters for the SVD model.
+        best_params_knn: Best hyperparameters for the KNN model.
+        best_params_baseline: Best hyperparameters for the BaselineOnly model.
+        best_params_normal: Best hyperparameters for the NormalPredictor model.
+        best_params_nmf: Best hyperparameters for the NMF model.
+        best_params_slope_one: Best hyperparameters for the SlopeOne model.
+        content_model_params: Parameters for the content-based model.
+
+    Returns:
+        A tuple containing the trained SVD, KNN, BaselineOnly, NormalPredictor, NMF, SlopeOne, and content-based models.
+    """
     
+    # Train the collaborative filtering models
     svd = SVD(**best_params_svd)
     knn = KNNBasic(**best_params_knn)
     baseline = BaselineOnly(**best_params_baseline)
@@ -77,10 +100,10 @@ def model_trainer(
     nmf.fit(train_data)
     slope_one.fit(train_data)
 
-    # Ensure ngram_range is a tuple
+    # Ensure ngram_range is a tuple for content model parameters
     content_model_params['ngram_range'] = tuple(content_model_params['ngram_range'])
 
-    # Combine 'title', 'tagline', and 'overview' into one text column
+    # Combine 'title', 'tagline', and 'overview' into one text column for content-based filtering
     raw_train_data['combined_text'] = (
         raw_train_data['title'].fillna('') + ' ' +
         raw_train_data['tagline'].fillna('') + ' ' +
@@ -91,10 +114,10 @@ def model_trainer(
     tfidf = TfidfVectorizer(stop_words='english', **content_model_params)
     tfidf_matrix = tfidf.fit_transform(raw_train_data['combined_text'])
 
-    # Use only the numerical columns
+    # if we want to also use numerical columns in content-based model, but it's mostly uncommon
     # numerical_features = raw_train_data[['budget', 'revenue', 'runtime']].fillna(0).values
 
-    # Combine TF-IDF matrix with numerical features
+    # Combine TF-IDF matrix with numerical features if used
     combined_features = hstack([tfidf_matrix])
 
     # Compute cosine similarity on the combined features
