@@ -4,7 +4,6 @@ from collections import defaultdict
 from surprise import accuracy
 from zenml import step
 
-
 def precision_recall_at_k(predictions: List[Tuple], k: int = 10, threshold: float = 3.5) -> Tuple[float, float]:
     user_est_true = defaultdict(list)
     for uid, iid, true_r, est, _ in predictions:
@@ -71,22 +70,37 @@ def evaluate_content_based(raw_test_data: pd.DataFrame, cosine_sim: Any, k: int 
     
     return precision, recall
 
-
 @step(enable_cache=False)
 def evaluate_model(
-    svd_model: Any, knn_model: Any, baseline_model: Any, content_model: Dict[str, Any], raw_test_data: pd.DataFrame, k: int = 10
-) -> Tuple[float, float, float, float, float, float, float, float, float, float, float, float, float, float]:
+    svd_model: Any, 
+    knn_model: Any, 
+    baseline_model: Any, 
+    normal_model: Any, 
+    nmf_model: Any, 
+    slopeone_model: Any, 
+    content_model: Dict[str, Any], 
+    raw_test_data: pd.DataFrame, 
+    k: int = 10
+) -> Tuple[float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float]:
     test_data_tuples = [(d['userId'], d['id'], d['rating']) for d in raw_test_data.to_dict(orient='records')]
 
     svd_metrics = evaluate_model_predictions(svd_model, test_data_tuples, k)
     knn_metrics = evaluate_model_predictions(knn_model, test_data_tuples, k)
     baseline_metrics = evaluate_model_predictions(baseline_model, test_data_tuples, k)
+    normal_metrics = evaluate_model_predictions(normal_model, test_data_tuples, k)
+    nmf_metrics = evaluate_model_predictions(nmf_model, test_data_tuples, k)
+    slopeone_metrics = evaluate_model_predictions(slopeone_model, test_data_tuples, k)
 
     cosine_sim = content_model['cosine_sim']
     content_precision, content_recall = evaluate_content_based(raw_test_data, cosine_sim, k)
+    
     print("SVD Metrics:", svd_metrics)
     print("KNN Metrics:", knn_metrics)
     print("Baseline Metrics:", baseline_metrics)
+    print("NormalPredictor Metrics:", normal_metrics)
+    print("NMF Metrics:", nmf_metrics)
+    print("SlopeOne Metrics:", slopeone_metrics)
     print("Content-based Model Precision:", content_precision)
     print("Content-based Model Recall:", content_recall)
-    return svd_metrics + knn_metrics + baseline_metrics + (content_precision, content_recall)
+    
+    return svd_metrics + knn_metrics + baseline_metrics + normal_metrics + nmf_metrics + slopeone_metrics + (content_precision, content_recall)

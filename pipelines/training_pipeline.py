@@ -14,21 +14,27 @@ def training_pipeline():
     raw_test_data = test_data
 
     dataset, trainset, test_data = convert_to_surprise_format(raw_train_data=raw_train_data, raw_test_data=raw_test_data)
-    best_params_svd, best_params_knn, best_params_baseline, content_model_params = hp_tuner(dataset=dataset, raw_train_data=raw_train_data)
-    svd_model, knn_model, baseline_model, content_model = model_trainer(
-        
+    best_params_svd, best_params_knn, best_params_baseline, best_params_normal, best_params_nmf, best_params_slope_one, content_model_params = hp_tuner(dataset=dataset, raw_train_data=raw_train_data)
+    
+    svd_model, knn_model, baseline_model, normal_model, nmf_model, slopeone_model, content_model = model_trainer(
         train_data=trainset, 
         raw_train_data=raw_train_data,
         best_params_svd=best_params_svd, 
         best_params_knn=best_params_knn, 
         best_params_baseline=best_params_baseline,
+        best_params_normal=best_params_normal,
+        best_params_nmf=best_params_nmf,
+        best_params_slope_one=best_params_slope_one,
         content_model_params=content_model_params
     )
+    
     evaluate_model(
         svd_model=svd_model, 
         knn_model=knn_model, 
         baseline_model=baseline_model, 
+        normal_model=normal_model,
+        nmf_model=nmf_model,
+        slopeone_model=slopeone_model,
         content_model=content_model, 
         raw_test_data=raw_test_data
     )
-

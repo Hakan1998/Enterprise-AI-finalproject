@@ -19,8 +19,6 @@ from steps.inference.get_recommendations import make_predictions
 
 @pipeline(enable_cache=False)
 def inference_pipeline():
-
-
     raw_movies = load_movie_data("./data/movies_metadata.csv")
     movies = clean_movie_data(raw_movies)
     raw_users = load_rating_data("./data/inference_ratings.csv")
@@ -30,7 +28,7 @@ def inference_pipeline():
 
     train_data, test_data = split_data(dataset)
     pipeline = create_preprocessing_pipeline(dataset)
-    train_data,test_data,pipeline = feature_preprocessor(pipeline,train_data,test_data)
+    train_data, test_data, pipeline = feature_preprocessor(pipeline, train_data, test_data)
 
     # Die folgenden Zeilen sind dazu da, sicherzustellen, dass die korrekten Versionen der trainierten Daten verwendet werden
     client = Client()
@@ -41,13 +39,17 @@ def inference_pipeline():
 
     dataset, trainset, test_data = convert_to_surprise_format(raw_train_data=raw_train_data, raw_test_data=raw_test_data)
     
-    best_params_svd, best_params_knn, best_params_baseline, content_model_params = hp_tuner(dataset=dataset, raw_train_data=raw_train_data)
-    svd_model, knn_model, baseline_model, content_model = model_trainer(
+    best_params_svd, best_params_knn, best_params_baseline, best_params_normal, best_params_nmf, best_params_slope_one, content_model_params = hp_tuner(dataset=dataset, raw_train_data=raw_train_data)
+    
+    svd_model, knn_model, baseline_model, normal_model, nmf_model, slopeone_model, content_model = model_trainer(
         train_data=trainset, 
         raw_train_data=raw_train_data,
         best_params_svd=best_params_svd, 
         best_params_knn=best_params_knn, 
         best_params_baseline=best_params_baseline,
+        best_params_normal=best_params_normal,
+        best_params_nmf=best_params_nmf,
+        best_params_slope_one=best_params_slope_one,
         content_model_params=content_model_params
     )
 
@@ -55,6 +57,9 @@ def inference_pipeline():
         svd_model=svd_model, 
         knn_model=knn_model, 
         baseline_model=baseline_model, 
+        normal_model=normal_model,
+        nmf_model=nmf_model,
+        slopeone_model=slopeone_model,
         content_model=content_model, 
         raw_test_data=raw_test_data
     )

@@ -31,13 +31,24 @@ def get_model_recommendations(model: Any, test_data: List[Tuple]) -> List[Tuple]
 
 @step
 def make_predictions(
-    svd_model: Any, knn_model: Any, baseline_model: Any, content_model: Dict[str, Any], raw_test_data: pd.DataFrame, k: int = 10
+    svd_model: Any, 
+    knn_model: Any, 
+    baseline_model: Any, 
+    normal_model: Any, 
+    nmf_model: Any, 
+    slopeone_model: Any, 
+    content_model: Dict[str, Any], 
+    raw_test_data: pd.DataFrame, 
+    k: int = 10
 ) -> Dict[str, Any]:
     test_data_tuples = [(d['userId'], d['id'], d['rating']) for d in raw_test_data.to_dict(orient='records')]
 
     svd_recommendations = get_model_recommendations(svd_model, test_data_tuples)
     knn_recommendations = get_model_recommendations(knn_model, test_data_tuples)
     baseline_recommendations = get_model_recommendations(baseline_model, test_data_tuples)
+    normal_recommendations = get_model_recommendations(normal_model, test_data_tuples)
+    nmf_recommendations = get_model_recommendations(nmf_model, test_data_tuples)
+    slopeone_recommendations = get_model_recommendations(slopeone_model, test_data_tuples)
 
     cosine_sim = content_model['cosine_sim']
     content_recommendations = []
@@ -67,5 +78,8 @@ def make_predictions(
         "svd_recommendations": svd_recommendations,
         "knn_recommendations": knn_recommendations,
         "baseline_recommendations": baseline_recommendations,
+        "normal_recommendations": normal_recommendations,
+        "nmf_recommendations": nmf_recommendations,
+        "slopeone_recommendations": slopeone_recommendations,
         "content_recommendations": content_recommendations
     }
