@@ -7,7 +7,7 @@ import pandas as pd
 
 
 @step
-def load_best_model() -> Annotated[any, "best_model"]:
+def load_best_model() -> Annotated[Any, "best_model"]:
     """
     Load the best model from MLflow.
     """

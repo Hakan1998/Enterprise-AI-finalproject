@@ -7,8 +7,9 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.materializer_registry import materializer_registry
 from zenml.enums import ArtifactType
 import json
-from typing import List, any,Type
-
+from typing import List, any,Type, Any
+from pandas import pd
+import mlflow
 
 # Materializer for Surprise Dataset objects
 class DatasetMaterializer(BaseMaterializer):
@@ -118,24 +119,55 @@ class NumpyInt64Materializer(BaseMaterializer):
         with open(self.artifact.uri, 'wb') as f:
             np.save(f, data)
 
-class ListMaterializer(BaseMaterializer):
-    ASSOCIATED_TYPES = (list,)
-    
-    def handle_input(self, data_type: Type) -> List:
-        filepath = self.artifact.uri + '/data.json'
-        with open(filepath, 'r') as f:
-            data = json.load(f)
-        return data
 
-    def handle_return(self, data: List) -> None:
-        filepath = self.artifact.uri + '/data.json'
-        with open(filepath, 'w') as f:
-            json.dump(data, f)
+class PandasMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (pd.DataFrame,)
+    ASSOCIATED_ARTIFACT_TYPE = "DataFrame"
 
+    def load(self, data_type: type) -> pd.DataFrame:
+        return pd.read_csv(self.artifact.uri)
+
+    def save(self, obj: pd.DataFrame) -> None:
+        obj.to_csv(self.artifact.uri, index=False)
+
+class PyFuncModelMaterializer(BaseMaterializer):
+    """
+    Materializer to handle the serialization and deserialization of mlflow.pyfunc.PyFuncModel objects.
+
+    This materializer handles the input and output operations for PyFuncModel objects
+    using mlflow's pyfunc module for storage in ZenML artifacts.
+    """
+    ASSOCIATED_TYPES = [mlflow.pyfunc.PyFuncModel]
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
+
+    def handle_input(self, data_type):
+        """
+        Load a mlflow.pyfunc.PyFuncModel object from the artifact URI.
+
+        Args:
+            data_type: The expected data type for the loaded object.
+
+        Returns:
+            mlflow.pyfunc.PyFuncModel: The loaded PyFuncModel object.
+        """
+        super().handle_input(data_type)
+        return mlflow.pyfunc.load_model(self.artifact.uri)
+
+    def handle_return(self, data):
+        """
+        Save a mlflow.pyfunc.PyFuncModel object to the artifact URI.
+
+        Args:
+            data: The mlflow.pyfunc.PyFuncModel object to be saved.
+        """
+        super().handle_return(data)
+        mlflow.pyfunc.save_model(data, self.artifact.uri)
 
 # Register the custom materializers
 # Register the custom materializers
+
 materializer_registry.register_materializer(Dataset, DatasetMaterializer)
 materializer_registry.register_materializer(Trainset, TrainsetMaterializer)
 materializer_registry.register_materializer(np.int64, NumpyInt64Materializer)
-#materializer_registry.register_materializer(list, ListMaterializer)
+materializer_registry.register_materializer(pd.DataFrame, PandasMaterializer)
+materializer_registry.register_materializer(Any, PyFuncModelMaterializer)

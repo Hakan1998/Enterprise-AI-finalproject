@@ -13,7 +13,10 @@ def feature_preprocessor(
 ) -> Tuple[Annotated[pd.DataFrame, "train_data_preprocessed"], 
            Annotated[pd.DataFrame, "test_data_preprocessed"], 
            Annotated[Pipeline, "pipeline"]]:
+    
     """Uses the preprocessing pipeline to transform the training and testing datasets."""
+
+    
     # Fit the pipeline to the training data
     pipeline.fit(train_data)
 
@@ -41,8 +44,5 @@ def feature_preprocessor(
     # Convert the transformed data back to DataFrames with new feature names
     train_data_preprocessed = pd.DataFrame(train_data_transformed, columns=feature_names)
     test_data_preprocessed = pd.DataFrame(test_data_transformed, columns=feature_names)
-
-    preprocessed_inference_data = pd.concat([train_data, test_data], ignore_index=True)
-
 
     return train_data_preprocessed, test_data_preprocessed, pipeline

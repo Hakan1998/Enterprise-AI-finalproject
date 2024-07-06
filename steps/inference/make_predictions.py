@@ -1,33 +1,51 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 from surprise import Trainset
 import pandas as pd
 from zenml import step
+from surprise import Dataset, Reader
+from surprise import AlgoBase
+
+
+
+def evaluate_model_predictions(model: Any, test_data: List[Tuple], k: int = 10) -> Tuple[float, float, float, float]:
+    predictions = model.predict(test_data)
+    return predictions
 
 @step
-def make_predictions(model: Any, test_data: pd.Series, k: int = 10) -> Dict[int, List[int]]:
+def make_predictions(model: Any, raw_test_data: pd.DataFrame) -> pd.DataFrame:
     """
-    Make top k predictions using the trained model on the test data.
+    Generate predictions for a given model and dataset.
 
-    Args:
-        model: The trained Surprise model.
-        test_data (pd.Series): The test data as a series of dictionaries.
-        k (int): Number of top recommendations to return per user.
+    Parameters:
+    model (Any): The trained recommendation model.
+    raw_test_data (pd.DataFrame): The dataset containing userId, id, and rating columns, plus any additional columns.
 
     Returns:
-        Dict[int, List[int]]: A dictionary where keys are userIds and values are lists of top k recommended movieIds.
+    pd.DataFrame: A DataFrame containing userId, id, and the predicted rating.
     """
-    user_ids = test_data.apply(lambda x: x['userId']).unique()
-    all_movie_ids = test_data.apply(lambda x: x['id']).unique()
+    # Extract the relevant columns to create test data tuples
+    test_data_tuples = [(d['userId'], d['id'], d['rating']) for d in raw_test_data.to_dict(orient='records')]
+    evaluate_model_predictions(model, test_data_tuples, k=10)
 
-    top_k_recommendations = {}
     
-    for user_id in user_ids:
-        user_predictions = [
-            (movie_id, model.predict(user_id, movie_id).est)
-            for movie_id in all_movie_ids
-        ]
-        
-        top_k_movies = sorted(user_predictions, key=lambda x: x[1], reverse=True)[:k]
-        top_k_recommendations[user_id] = [movie_id for movie_id, _ in top_k_movies]
+    # Convert the test data tuples to a DataFrame
+    test_data_df = pd.DataFrame(test_data_tuples, columns=['userId', 'id', 'rating'])
 
-    return top_k_recommendations
+    # Generate predictions
+    predictions = []
+    if isinstance(model, AlgoBase):
+        # If model is a surprise model
+        for _, row in test_data_df.iterrows():
+            uid = row['userId']
+            iid = row['id']
+            pred = model.predict(uid, iid)
+            predictions.append(pred.est)
+    else:
+        # Assume model is an MLflow model
+        input_data = test_data_df[['userId', 'id']]
+        predictions = model.predict(input_data)
+        predictions = predictions.tolist() if hasattr(predictions, 'tolist') else predictions
+
+    # Add the predictions to the DataFrame
+    test_data_df['predicted_rating'] = predictions
+    return test_data_df
