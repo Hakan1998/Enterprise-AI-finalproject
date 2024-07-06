@@ -42,7 +42,7 @@ def inference_pipeline():
     print(f"Test Data: {test_data}, Type: {type(test_data)}")
 
     model = Client().get_artifact_version("best_model")
-    
+    """
     recommendations = make_predictions(
         model=model,
         test_data=test_data
@@ -51,3 +51,5 @@ def inference_pipeline():
     print(recommendations)
     
     return recommendations
+
+    """

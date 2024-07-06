@@ -42,4 +42,7 @@ def feature_preprocessor(
     train_data_preprocessed = pd.DataFrame(train_data_transformed, columns=feature_names)
     test_data_preprocessed = pd.DataFrame(test_data_transformed, columns=feature_names)
 
+    preprocessed_inference_data = pd.concat([train_data, test_data], ignore_index=True)
+
+
     return train_data_preprocessed, test_data_preprocessed, pipeline
