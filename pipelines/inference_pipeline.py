@@ -4,27 +4,24 @@ from zenml.steps import step
 import pandas as pd
 
 from .feature_engineering_pipeline import (
-    load_movie_data,
-    clean_movie_data,
-    load_rating_data,
-    preprocess_rating_data,
-    merged_data,
+
     split_data,
     create_preprocessing_pipeline,
     feature_preprocessor
 )
 
+
+from steps.inference.load_inference_data import load_inference_data
 from .training_pipeline import convert_to_surprise_format, hp_tuner, model_trainer
 from steps.inference.get_recommendations import make_predictions
+from steps.inference.load_best_model import load_best_model
+
 
 @pipeline(enable_cache=False)
 def inference_pipeline():
-    raw_movies = load_movie_data("./data/movies_metadata.csv")
-    movies = clean_movie_data(raw_movies)
-    raw_users = load_rating_data("./data/inference_ratings.csv")
-    users = preprocess_rating_data(raw_users)
 
-    dataset = merged_data(movies, users)
+    dataset = load_inference_data()
+
 
     train_data, test_data = split_data(dataset)
     pipeline = create_preprocessing_pipeline(dataset)
@@ -38,30 +35,17 @@ def inference_pipeline():
     raw_test_data = test_data
 
     dataset, trainset, test_data = convert_to_surprise_format(raw_train_data=raw_train_data, raw_test_data=raw_test_data)
-    
-    best_params_svd, best_params_knn, best_params_baseline, best_params_normal, best_params_nmf, best_params_slope_one, content_model_params = hp_tuner(dataset=dataset, raw_train_data=raw_train_data)
-    
-    svd_model, knn_model, baseline_model, normal_model, nmf_model, slopeone_model, content_model = model_trainer(
-        train_data=trainset, 
-        raw_train_data=raw_train_data,
-        best_params_svd=best_params_svd, 
-        best_params_knn=best_params_knn, 
-        best_params_baseline=best_params_baseline,
-        best_params_normal=best_params_normal,
-        best_params_nmf=best_params_nmf,
-        best_params_slope_one=best_params_slope_one,
-        content_model_params=content_model_params
-    )
 
+    # Load best model
+    model = load_best_model()
+    print(f"Model: {model}, Type: {type(model)}")
+    print(f"Test Data: {test_data}, Type: {type(test_data)}")
+
+    model = Client().get_artifact_version("best_model")
+    
     recommendations = make_predictions(
-        svd_model=svd_model, 
-        knn_model=knn_model, 
-        baseline_model=baseline_model, 
-        normal_model=normal_model,
-        nmf_model=nmf_model,
-        slopeone_model=slopeone_model,
-        content_model=content_model, 
-        raw_test_data=raw_test_data
+        model=model,
+        test_data=test_data
     )
     
     print(recommendations)

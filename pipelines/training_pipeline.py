@@ -5,7 +5,7 @@ from steps.training.evaluate_model import evaluate_model
 from steps.training.convert_to_surprise_format import convert_to_surprise_format
 from zenml.client import Client
 
-@pipeline(enable_cache=False)
+@pipeline(enable_cache=True)
 def training_pipeline():
     client = Client()
     train_data = client.get_artifact_version("train_data_preprocessed")

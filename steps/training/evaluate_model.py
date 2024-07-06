@@ -2,33 +2,10 @@ from typing import Any, Tuple, Dict, List
 import pandas as pd
 from collections import defaultdict
 from surprise import accuracy
+import mlflow
 from zenml import step
 
-
-
-"""
-General Evaluation workflow:
-1. Create rating predictions: For each user and each movie, generate predicted ratings using various recommendation models.
-2. Evaluate predictions: Compare the predicted ratings with the actual ratings to compute evaluation metrics.
-3. Calculate evaluation metrics: Use metrics such as RMSE (Root Mean Squared Error), MAE (Mean Absolute Error), precision, and recall to measure the performance of the models.
-4. Evaluate precision and recall: For each model, compute precision and recall at k, where k is the number of top recommendations considered. Precision measures the fraction of relevant items among the recommended items, and recall measures the fraction of relevant items that have been recommended out of all relevant items.
-5. Evaluate content-based model: Additionally, evaluate a content-based model by computing cosine similarity between item features and using this similarity to make recommendations. Calculate precision and recall for the content-based model.
-6. Output results: Return the evaluation metrics for all models, providing a comprehensive overview of their performance.
-"""
-
-
 def precision_recall_at_k(predictions: List[Tuple], k: int = 10, threshold: float = 3.5) -> Tuple[float, float]:
-    """
-    Calculate precision and recall at k for given predictions.
-
-    Args:
-        predictions: List of tuples containing user ID, item ID, true rating, estimated rating, and additional info.
-        k: Number of top predictions to consider.
-        threshold: Rating threshold to consider a recommendation relevant.
-
-    Returns:
-        Tuple containing precision and recall at k.
-    """
     user_est_true = defaultdict(list)
     for uid, iid, true_r, est, _ in predictions:
         user_est_true[uid].append((est, true_r))
@@ -50,17 +27,6 @@ def precision_recall_at_k(predictions: List[Tuple], k: int = 10, threshold: floa
     return precision, recall
 
 def evaluate_model_predictions(model: Any, test_data: List[Tuple], k: int = 10) -> Tuple[float, float, float, float]:
-    """
-    Evaluate a model's predictions using RMSE, MAE, precision, and recall.
-
-    Args:
-        model: The recommendation model to evaluate.
-        test_data: The test data as a list of tuples.
-        k: Number of top predictions to consider for precision and recall.
-
-    Returns:
-        Tuple containing RMSE, MAE, precision, and recall.
-    """
     predictions = model.test(test_data)
     rmse = accuracy.rmse(predictions, verbose=False)
     mae = accuracy.mae(predictions, verbose=False)
@@ -68,17 +34,6 @@ def evaluate_model_predictions(model: Any, test_data: List[Tuple], k: int = 10) 
     return rmse, mae, precision, recall
 
 def evaluate_content_based(raw_test_data: pd.DataFrame, cosine_sim: Any, k: int = 10) -> Tuple[float, float]:
-    """
-    Evaluate a content-based model's predictions using precision and recall.
-
-    Args:
-        raw_test_data: Raw test data in DataFrame format.
-        cosine_sim: Cosine similarity matrix for content-based recommendations.
-        k: Number of top recommendations to consider.
-
-    Returns:
-        Tuple containing precision and recall.
-    """
     hits = 0
     total_relevant = 0
     total_recommended = 0
@@ -116,7 +71,7 @@ def evaluate_content_based(raw_test_data: pd.DataFrame, cosine_sim: Any, k: int 
     
     return precision, recall
 
-@step(enable_cache=False)
+@step(experiment_tracker="mlflow_experiment_tracker", enable_cache=False)
 def evaluate_model(
     svd_model: Any, 
     knn_model: Any, 
@@ -127,43 +82,58 @@ def evaluate_model(
     content_model: Dict[str, Any], 
     raw_test_data: pd.DataFrame, 
     k: int = 10
-) -> Tuple[float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float]:
+) -> bool:
     """
-    Evaluate multiple recommendation models and a content-based model.
-
-    Args:
-        svd_model: Trained SVD model.
-        knn_model: Trained KNN model.
-        baseline_model: Trained BaselineOnly model.
-        normal_model: Trained NormalPredictor model.
-        nmf_model: Trained NMF model.
-        slopeone_model: Trained SlopeOne model.
-        content_model: Trained content-based model.
-        raw_test_data: Raw test data in DataFrame format.
-        k: Number of top predictions to consider for precision and recall.
-
-    Returns:
-        Tuple containing evaluation metrics for all models.
+    Evaluate multiple recommendation models and a content-based model, logging metrics with MLflow and deciding on deployment.
     """
     test_data_tuples = [(d['userId'], d['id'], d['rating']) for d in raw_test_data.to_dict(orient='records')]
 
-    svd_metrics = evaluate_model_predictions(svd_model, test_data_tuples, k)
-    knn_metrics = evaluate_model_predictions(knn_model, test_data_tuples, k)
-    baseline_metrics = evaluate_model_predictions(baseline_model, test_data_tuples, k)
-    normal_metrics = evaluate_model_predictions(normal_model, test_data_tuples, k)
-    nmf_metrics = evaluate_model_predictions(nmf_model, test_data_tuples, k)
-    slopeone_metrics = evaluate_model_predictions(slopeone_model, test_data_tuples, k)
+    models = {
+        "SVD": svd_model,
+        "KNN": knn_model,
+        "BaselineOnly": baseline_model,
+        "NormalPredictor": normal_model,
+        "NMF": nmf_model,
+        "SlopeOne": slopeone_model
+    }
+
+    best_model_name = None
+    best_model = None
+    best_model_metrics = None
+
+    for model_name, model in models.items():
+        with mlflow.start_run(run_name=model_name, nested=True):
+            rmse, mae, precision, recall = evaluate_model_predictions(model, test_data_tuples, k)
+            mlflow.log_metric("RMSE", rmse)
+            mlflow.log_metric("MAE", mae)
+            mlflow.log_metric("Precision", precision)
+            mlflow.log_metric("Recall", recall)
+
+            if best_model_metrics is None or precision > best_model_metrics[2]:  # Use precision as the deciding metric
+                best_model_name = model_name
+                best_model = model
+                best_model_metrics = (rmse, mae, precision, recall)
 
     cosine_sim = content_model['cosine_sim']
-    content_precision, content_recall = evaluate_content_based(raw_test_data, cosine_sim, k)
-    
-    print("SVD Metrics:", svd_metrics)
-    print("KNN Metrics:", knn_metrics)
-    print("Baseline Metrics:", baseline_metrics)
-    print("NormalPredictor Metrics:", normal_metrics)
-    print("NMF Metrics:", nmf_metrics)
-    print("SlopeOne Metrics:", slopeone_metrics)
-    print("Content-based Model Precision:", content_precision)
-    print("Content-based Model Recall:", content_recall)
-    
-    return svd_metrics + knn_metrics + baseline_metrics + normal_metrics + nmf_metrics + slopeone_metrics + (content_precision, content_recall)
+    with mlflow.start_run(run_name="ContentBased", nested=True):
+        content_precision, content_recall = evaluate_content_based(raw_test_data, cosine_sim, k)
+        mlflow.log_metric("Content_Precision", content_precision)
+        mlflow.log_metric("Content_Recall", content_recall)
+
+    print(f"Best Model: {best_model_name} with metrics {best_model_metrics}")
+
+    # Log the best model for deployment
+    with mlflow.start_run(run_name="DeployBestModel", nested=True):
+        mlflow.log_param("Best_Model", best_model_name)
+        mlflow.log_metric("Best_Model_RMSE", best_model_metrics[0])
+        mlflow.log_metric("Best_Model_MAE", best_model_metrics[1])
+        mlflow.log_metric("Best_Model_Precision", best_model_metrics[2])
+        mlflow.log_metric("Best_Model_Recall", best_model_metrics[3])
+
+        # Register the model under a specific name
+        mlflow.sklearn.log_model(best_model, "model", registered_model_name="best_model")
+
+    # Decide on deployment based on the best model's precision
+    deploy = bool(best_model_metrics[2] > 0.5)  # Convert numpy.bool_ to Python bool
+
+    return deploy

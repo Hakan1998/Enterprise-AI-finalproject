@@ -7,7 +7,7 @@ This pipeline will perform feature engineering on our movie and rating dataset. 
 Take a look at the create_preprocessing_pipeline step and the feature_preprocessor step. 
 You will need to fix some parts there. 
 """
-@pipeline(enable_cache=False)
+@pipeline(enable_cache=True)
 def feature_engineering_pipeline():
     """"
         Pipeline function for performing feature engineering combined data of movie data

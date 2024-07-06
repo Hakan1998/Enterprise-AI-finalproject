@@ -3,7 +3,7 @@ from typing import Tuple, Annotated
 import pandas as pd
 from zenml import step
 
-@step
+@step(enable_cache=False)
 def convert_to_surprise_format(
     raw_train_data: pd.DataFrame, 
     raw_test_data: pd.DataFrame

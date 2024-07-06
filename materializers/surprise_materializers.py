@@ -6,6 +6,9 @@ from zenml.client import Client
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.materializer_registry import materializer_registry
 from zenml.enums import ArtifactType
+import json
+from typing import List, any,Type
+
 
 # Materializer for Surprise Dataset objects
 class DatasetMaterializer(BaseMaterializer):
@@ -115,8 +118,24 @@ class NumpyInt64Materializer(BaseMaterializer):
         with open(self.artifact.uri, 'wb') as f:
             np.save(f, data)
 
+class ListMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (list,)
+    
+    def handle_input(self, data_type: Type) -> List:
+        filepath = self.artifact.uri + '/data.json'
+        with open(filepath, 'r') as f:
+            data = json.load(f)
+        return data
+
+    def handle_return(self, data: List) -> None:
+        filepath = self.artifact.uri + '/data.json'
+        with open(filepath, 'w') as f:
+            json.dump(data, f)
+
+
 # Register the custom materializers
 # Register the custom materializers
 materializer_registry.register_materializer(Dataset, DatasetMaterializer)
 materializer_registry.register_materializer(Trainset, TrainsetMaterializer)
 materializer_registry.register_materializer(np.int64, NumpyInt64Materializer)
+#materializer_registry.register_materializer(list, ListMaterializer)
