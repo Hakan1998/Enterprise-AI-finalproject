@@ -154,6 +154,9 @@ plt.xlabel('Film ID')
 plt.ylabel('Durchschnittliche Bewertung')
 plt.show()
 
+# Laden des Datensatzes
+df_ratings = pd.read_csv("/workspaces/enterpriseai/data/ratings_small.csv")
+
 # Anzahl der Bewertungen pro Film zählen
 rating_counts = df_ratings['movieId'].value_counts().reset_index()
 rating_counts.columns = ['movieId', 'rating_count']
