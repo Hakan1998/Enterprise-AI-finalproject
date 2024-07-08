@@ -11,6 +11,11 @@ from typing import List, any,Type, Any
 from pandas import pd
 import mlflow
 
+"""
+Different Materializers for different data Types to pass the data as an Output from one Pipeline/step to another.
+For more info look here: https://docs.zenml.io/how-to/handle-data-artifacts/handle-custom-data-types
+"""
+
 # Materializer for Surprise Dataset objects
 class DatasetMaterializer(BaseMaterializer):
     """

@@ -20,7 +20,7 @@ from typing import Tuple, Any
 Load and preprocess the Inference data. Identicly as Feature Engineering pipeline- 
 """
 @step
-def load_and_preprocess_inference_data() -> Annotated[pd.DataFrame, "inference_data"]:
+def load_and_preprocess_inference_data() -> Annotated[pd.DataFrame, "preprocessed inference_data"]:
 
     raw_movies = load_movie_data("./data/movies_metadata.csv")
     movies = clean_movie_data(raw_movies)
@@ -36,6 +36,6 @@ def load_and_preprocess_inference_data() -> Annotated[pd.DataFrame, "inference_d
     print(combined_data)                                        # no need to split anymore but its easier if we run our previous functions and then just merge the data, Reason is zenml sets many artifacts so its difficult to edit things after.
 
 
-    
+    combined_data = pd.DataFrame(combined_data)
 
     return combined_data

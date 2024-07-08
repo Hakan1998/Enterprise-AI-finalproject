@@ -7,6 +7,18 @@ from zenml.client import Client
 
 @pipeline(enable_cache=True)
 def training_pipeline():
+    """
+    Training pipeline for building and evaluating recommendation models using the Surprise library.
+
+    This pipeline includes the following steps:
+    
+    1. Load preprocessed training and testing data artifacts.
+    2. Convert the raw data into the format required by the Surprise library.
+    3. Perform hyperparameter tuning to find the best parameters for different algorithms.
+    4. Train multiple recommendation models using the best hyperparameters.
+    5. Evaluate the trained models on the test data and log the results.
+
+    """
     client = Client()
     train_data = client.get_artifact_version("train_data_preprocessed")
     test_data = client.get_artifact_version("test_data_preprocessed")

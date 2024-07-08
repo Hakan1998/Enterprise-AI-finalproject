@@ -6,6 +6,17 @@ import mlflow
 from zenml import step
 
 def precision_recall_at_k(predictions: List[Tuple], k: int = 10, threshold: float = 3.5) -> Tuple[float, float]:
+    """
+    Calculate precision and recall at k for a list of predictions.
+
+    Args:
+        predictions (List[Tuple]): List of predictions containing tuples of (user ID, item ID, true rating, estimated rating, details).
+        k (int): Number of top recommendations to consider.
+        threshold (float): Rating threshold to consider a prediction as relevant.
+
+    Returns:
+        Tuple[float, float]: Precision and recall at k.
+    """
     user_est_true = defaultdict(list)
     for uid, iid, true_r, est, _ in predictions:
         user_est_true[uid].append((est, true_r))
@@ -27,6 +38,17 @@ def precision_recall_at_k(predictions: List[Tuple], k: int = 10, threshold: floa
     return precision, recall
 
 def evaluate_model_predictions(model: Any, test_data: List[Tuple], k: int = 10) -> Tuple[float, float, float, float]:
+    """
+    Evaluate a model's predictions on test data and calculate RMSE, MAE, precision, and recall.
+
+    Args:
+        model (Any): The trained model to evaluate.
+        test_data (List[Tuple]): List of test data tuples (user ID, item ID, true rating).
+        k (int): Number of top recommendations to consider for precision and recall.
+
+    Returns:
+        Tuple[float, float, float, float]: RMSE, MAE, precision, and recall.
+    """
     predictions = model.test(test_data)
     rmse = accuracy.rmse(predictions, verbose=False)
     mae = accuracy.mae(predictions, verbose=False)
@@ -34,6 +56,17 @@ def evaluate_model_predictions(model: Any, test_data: List[Tuple], k: int = 10) 
     return rmse, mae, precision, recall
 
 def evaluate_content_based(raw_test_data: pd.DataFrame, cosine_sim: Any, k: int = 10) -> Tuple[float, float]:
+    """
+    Evaluate a content-based model using precision and recall.
+
+    Args:
+        raw_test_data (pd.DataFrame): The test data containing user-item interactions.
+        cosine_sim (Any): The cosine similarity matrix.
+        k (int): Number of top recommendations to consider.
+
+    Returns:
+        Tuple[float, float]: Precision and recall for the content-based model.
+    """
     hits = 0
     total_relevant = 0
     total_recommended = 0
@@ -85,9 +118,25 @@ def evaluate_model(
 ) -> bool:
     """
     Evaluate multiple recommendation models and a content-based model, logging metrics with MLflow and deciding on deployment.
+
+    Args:
+        svd_model (Any): The trained SVD model.
+        knn_model (Any): The trained KNN model.
+        baseline_model (Any): The trained BaselineOnly model.
+        normal_model (Any): The trained NormalPredictor model.
+        nmf_model (Any): The trained NMF model.
+        slopeone_model (Any): The trained SlopeOne model.
+        content_model (Dict[str, Any]): The content-based model containing the cosine similarity matrix.
+        raw_test_data (pd.DataFrame): The raw test data containing 'userId', 'id', and 'rating' columns.
+        k (int): Number of top recommendations to consider for precision and recall.
+
+    Returns:
+        bool: True if the best model's precision is greater than 0.5, indicating it should be deployed.
     """
+    # Convert test data to list of tuples for evaluation
     test_data_tuples = [(d['userId'], d['id'], d['rating']) for d in raw_test_data.to_dict(orient='records')]
 
+    # Define the models to evaluate
     models = {
         "SVD": svd_model,
         "KNN": knn_model,
@@ -101,6 +150,7 @@ def evaluate_model(
     best_model = None
     best_model_metrics = None
 
+    # Evaluate each model and log metrics with MLflow
     for model_name, model in models.items():
         with mlflow.start_run(run_name=model_name, nested=True):
             rmse, mae, precision, recall = evaluate_model_predictions(model, test_data_tuples, k)
@@ -114,6 +164,7 @@ def evaluate_model(
                 best_model = model
                 best_model_metrics = (rmse, mae, precision, recall)
 
+    # Evaluate the content-based model
     cosine_sim = content_model['cosine_sim']
     with mlflow.start_run(run_name="ContentBased", nested=True):
         content_precision, content_recall = evaluate_content_based(raw_test_data, cosine_sim, k)
