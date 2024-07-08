@@ -23,3 +23,37 @@ def feature_engineering_pipeline():
     train_data,test_data = split_data(dataset)
     pipeline = create_preprocessing_pipeline(dataset)
     train_data,test_data,pipeline = feature_preprocessor(pipeline,train_data,test_data)
+
+#EMAIL Alert to keep the team informed about the process     
+# Funktion zum Senden der Email
+def send_email(sender_email, receiver_email, password, subject, body):
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = receiver_email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(body, 'plain'))
+
+    try:
+        server = smtplib.SMTP('mail.gmx.de', 587)
+        server.starttls()
+        server.login(sender_email, password)
+        text = msg.as_string()
+        server.sendmail(sender_email, receiver_email, text)
+        server.quit()
+        print("Email erfolgreich gesendet!")
+    except Exception as e:
+        print(f"Fehler beim Senden der Email: {e}")
+
+# E-Mail Konfiguration
+sender_email = "Enterprise_AI@gmx.de"
+receiver_email = "fink.silas@gmx.de"
+password = "EnterpriseAI_Gruppe4"
+
+# Sende eine E-Mail nach erfolgreicher Pipeline-Ausführung
+subject = "Feature Engineering Pipeline Successful"
+body = "The feature engineering pipeline has been successfully executed."
+send_email(sender_email, receiver_email, password, subject, body)
+
+# Ausführung der Pipeline
+if __name__ == "__main__":
+    feature_engineering_pipeline()

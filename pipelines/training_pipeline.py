@@ -50,3 +50,35 @@ def training_pipeline():
         content_model=content_model, 
         raw_test_data=raw_test_data
     )
+
+#EMAIL Alert to keep the team informed about the process   
+def send_email(sender_email, receiver_email, password, subject, body):
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = receiver_email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(body, 'plain'))
+
+    try:
+        server = smtplib.SMTP('mail.gmx.de', 587)
+        server.starttls()
+        server.login(sender_email, password)
+        text = msg.as_string()
+        server.sendmail(sender_email, receiver_email, text)
+        server.quit()
+        print("Email erfolgreich gesendet!")
+    except Exception as e:
+        print(f"Fehler beim Senden der Email: {e}")
+
+# E-Mail Konfiguration
+sender_email = "Enterprise_AI@gmx.de"
+receiver_email = "fink.silas@gmx.de"
+password = "EnterpriseAI_Gruppe4"
+# Sende eine E-Mail nach erfolgreicher Pipeline-Ausführung
+subject = "Training Pipeline"
+body = "The training pipeline has been executed."
+send_email(sender_email, receiver_email, password, subject, body)
+
+# Ausführung der Pipeline
+if __name__ == "__main__":
+    training_pipeline()
