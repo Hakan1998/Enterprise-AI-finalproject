@@ -1,5 +1,8 @@
 from steps import load_movie_data,clean_movie_data,load_rating_data,preprocess_rating_data,merged_data,split_data,create_preprocessing_pipeline,feature_preprocessor
 from zenml import pipeline
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 """
 This pipeline will perform feature engineering on our movie and rating dataset. we combine the two dataset only with valid movieID

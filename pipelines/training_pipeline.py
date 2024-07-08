@@ -4,6 +4,9 @@ from steps.training.model_trainer import model_trainer
 from steps.training.evaluate_model import evaluate_model
 from steps.training.convert_to_surprise_format import convert_to_surprise_format
 from zenml.client import Client
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 @pipeline(enable_cache=True)
 def training_pipeline():

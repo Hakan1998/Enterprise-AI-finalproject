@@ -5,7 +5,9 @@ import pandas as pd
 from steps.inference.load_best_model import load_best_model
 from steps.inference.load_and_preprocess_inference_data import load_and_preprocess_inference_data
 from steps.inference.make_recommendations import make_recommendations
-
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 """
 Inference Pipeline that predict the top K movie matches for each User one the inference data
 """
