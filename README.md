@@ -4,6 +4,8 @@
 This repository contains the implementation of an end-to-end machine learning pipeline developed for a university project. The objective is to build a recommendation system that predicts top K movie matches for each user based on their historical ratings. The pipeline is structured using ZenML to ensure modularity, reproducibility, and scalability.
 
 --> Data Used: https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset
+
+
 --> Models Used: 
   Github:  https://github.com/NicolasHug/Surprise?tab=readme-ov-file
   Doku:https://surprise.readthedocs.io/en/stable/index.html
@@ -74,11 +76,20 @@ The inference pipeline:
    - `load_and_preprocess_inference_data`: Preprocess new inference data.
    - `make_recommendations`: Generate top K recommendations for each user.
 
+   **utilitys**
+   - contains the Email alert logic
+
 ### Email Notifications
 
 The project includes email notifications to keep the team informed about the pipeline execution status. Emails are sent using the `smtplib` library.
 
 ## Setup and Usage
+
+Is Described in main. Just run !pyton run.py and the pipelines will start. 
+
+Further you can you can use the ZenMl and Mflow Dashboard to got more insights. 
+
+
 
 ### Prerequisites
 
@@ -89,3 +100,20 @@ The project includes email notifications to keep the team informed about the pip
 - scikit-learn
 - smtplib for email notifications
 
+### Limitations
+1. **Data Sparsity & Cold starter**: Usual the dataset used has a significant level of sparsity, which can affect the accuracy of recommendations. Since we used an fix csv file this was not problem in our case. But in real world application the possibility of sparse data is high. Further new users or items with no historical data pose a challenge for the recommendation system.
+2. **Scalability**: While ZenML provides scalability, the current implementation may require optimization to handle large-scale datasets effectively.
+3. **Model Generalization**: The trained models might not generalize well to different datasets without further tuning and validation. We only use the basics Models here, there are many other state-of-art models which would receive way better results. Also our Hyperparamter range here is low, since we dont have much computional resources.
+
+4. **Missing Functionalities**: To make the whole project more realistic, the following points should be done:
+
+    - Create an API instead of loading data from an excel file
+    - retrain the Model after we have enough data or a certain time has passed and create some update/deploy rules
+    - ...
+
+
+### Recommendations
+1. **Data Augmentation**: Consider incorporating additional data sources to enrich the dataset and reduce sparsity.
+2. **Model Optimization**: Explore advanced optimization techniques and distributed training to enhance scalability.
+3. **Hybrid Approaches**: Combine collaborative filtering with content-based methods to mitigate the cold start problem.
+4. **Continuous Evaluation**: Implement a continuous evaluation pipeline to regularly assess model performance and retrain as necessary.
