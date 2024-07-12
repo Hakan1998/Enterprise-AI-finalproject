@@ -9,7 +9,7 @@ This repository contains the implementation of an end-to-end machine learning pi
 --> Models Used: 
 
   Github:  https://github.com/NicolasHug/Surprise?tab=readme-ov-file
-  Doku:https://surprise.readthedocs.io/en/stable/index.html
+  Doku:    https://surprise.readthedocs.io/en/stable/index.html
 
 
 ## Project Overview
