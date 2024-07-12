@@ -7,6 +7,7 @@ This repository contains the implementation of an end-to-end machine learning pi
 
 
 --> Models Used: 
+
   Github:  https://github.com/NicolasHug/Surprise?tab=readme-ov-file
   Doku:https://surprise.readthedocs.io/en/stable/index.html
 
@@ -43,13 +44,14 @@ The inference pipeline:
 
 ### Models
 
---> Basicly all Basic prediction Algos provived from the Surprise Libaray
+--> Collaborative Filter from Surprise Library
 - SVD (Singular Value Decomposition)
 - KNN (K-Nearest Neighbors)
 - BaselineOnly
 - NormalPredictor
 - NMF (Non-negative Matrix Factorization)
 - SlopeOne
+--> Content Based Filter
 - Content-based Filtering using Cosine Similarity
 
 ### Steps
@@ -85,7 +87,7 @@ The project includes email notifications to keep the team informed about the pip
 
 ## Setup and Usage
 
-Is Described in main. Just run !pyton run.py and the pipelines will start. 
+Is described in main. Just run !pyton run.py and the pipelines will start. 
 
 Further you can you can use the ZenMl and Mflow Dashboard to got more insights. 
 
@@ -109,7 +111,8 @@ Further you can you can use the ZenMl and Mflow Dashboard to got more insights.
 
     - Create an API instead of loading data from an excel file
     - retrain the Model after we have enough data or a certain time has passed and create some update/deploy rules
-    - ...
+    - and many more things
+    ...
 
 
 ### Recommendations
