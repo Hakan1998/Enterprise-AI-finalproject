@@ -120,3 +120,9 @@ Further you can you can use the ZenMl and Mflow Dashboard to got more insights.
 2. **Model Optimization**: Explore advanced optimization techniques and distributed training to enhance scalability.
 3. **Hybrid Approaches**: Combine collaborative filtering with content-based methods to mitigate the cold start problem.
 4. **Continuous Evaluation**: Implement a continuous evaluation pipeline to regularly assess model performance and retrain as necessary.
+
+
+### Contributors
+   -Hakan Gümüsoglu
+   -Silas Fink
+   -Yaqiong Wang
