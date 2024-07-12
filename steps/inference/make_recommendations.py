@@ -23,7 +23,7 @@ def convert_to_surprise_format(preprocessed_data: pd.DataFrame) -> Dataset:
 @step
 def make_recommendations(model: AlgoBase, raw_test_data: pd.DataFrame, k: int = 10) -> Annotated[pd.DataFrame, "User Movie Recommendation"]:
     """
-    Generate top K recommendations for each user.
+    Based on out referance Dataset this functions creates movie Recommendations for each User on Movies they havent seen(rated) yet.
 
     Parameters:
     model (AlgoBase): The trained recommendation model.
@@ -36,17 +36,21 @@ def make_recommendations(model: AlgoBase, raw_test_data: pd.DataFrame, k: int = 
     # Ensure raw_test_data is a DataFrame
     raw_test_data = raw_test_data.load() if hasattr(raw_test_data, 'load') else raw_test_data
 
-    # Get list of unique users and items
+    # Get list of unique users
     unique_users = raw_test_data['userId'].unique()
-    unique_items = raw_test_data['id'].unique()
 
     recommendations = []
 
     for uid in unique_users:
+        # Get items already rated by the user
+        rated_items = set(raw_test_data[raw_test_data['userId'] == uid]['id'])
+        
+        # Generate predictions for items not rated by the user
         user_recommendations = []
-        for iid in unique_items:
-            prediction = model.predict(str(uid), str(iid))
-            user_recommendations.append((iid, prediction.est))
+        for iid in raw_test_data['id'].unique():
+            if iid not in rated_items:
+                prediction = model.predict(str(uid), str(iid))
+                user_recommendations.append((iid, prediction.est))
         
         # Sort recommendations for the user and select top K
         user_recommendations.sort(key=lambda x: x[1], reverse=True)

@@ -133,6 +133,7 @@ def evaluate_model(
     Returns:
         bool: True if the best model's precision is greater than 0.5, indicating it should be deployed.
     """
+
     # Convert test data to list of tuples for evaluation
     test_data_tuples = [(d['userId'], d['id'], d['rating']) for d in raw_test_data.to_dict(orient='records')]
 
@@ -154,6 +155,7 @@ def evaluate_model(
     for model_name, model in models.items():
         with mlflow.start_run(run_name=model_name, nested=True):
             rmse, mae, precision, recall = evaluate_model_predictions(model, test_data_tuples, k)
+            mlflow.log_param("Model_Name", model_name)  # Log the model name
             mlflow.log_metric("RMSE", rmse)
             mlflow.log_metric("MAE", mae)
             mlflow.log_metric("Precision", precision)

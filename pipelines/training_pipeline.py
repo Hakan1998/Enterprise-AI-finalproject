@@ -7,6 +7,8 @@ from zenml.client import Client
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from steps.utility import SendEmailStep
+
 
 @pipeline(enable_cache=True)
 def training_pipeline():
@@ -54,35 +56,10 @@ def training_pipeline():
         raw_test_data=raw_test_data
     )
 
-#EMAIL Alert to keep the team informed about the process
-# Function for sending emails   
-def send_email(sender_email, receiver_email, password, subject, body):
-    msg = MIMEMultipart()
-    msg['From'] = sender_email
-    msg['To'] = receiver_email
-    msg['Subject'] = subject
-    msg.attach(MIMEText(body, 'plain'))
 
-    try:
-        server = smtplib.SMTP('mail.gmx.de', 587)
-        server.starttls()
-        server.login(sender_email, password)
-        text = msg.as_string()
-        server.sendmail(sender_email, receiver_email, text)
-        server.quit()
-        print("Email erfolgreich gesendet!")
-    except Exception as e:
-        print(f"Fehler beim Senden der Email: {e}")
+    #Define email subject and body for this specific pipeline
+    subject = "Training Pipeline Successful"
+    body = "The Training pipeline has been successfully executed."
 
-# E-Mail konfiguration
-sender_email = "Enterprise_AI@gmx.de"
-receiver_email = "fink.silas@gmx.de"
-password = "EnterpriseAI_Gruppe4"
-# Send an email upon successful pipeline execution
-subject = "Training Pipeline"
-body = "The training pipeline has been executed."
-send_email(sender_email, receiver_email, password, subject, body)
-
-# Execution of the pipeline
-if __name__ == "__main__":
-    training_pipeline()
+    send_email_step = SendEmailStep(subject=subject, body=body)
+    send_email_step.entrypoint()

@@ -10,6 +10,7 @@ from scipy.sparse import hstack
 from surprise import SVD, KNNBasic, BaselineOnly, NormalPredictor, NMF, SlopeOne, Trainset
 from typing import Dict, Any, Tuple, Annotated
 from zenml import step
+import mlflow
 
 # Ensure nltk data is downloaded
 import nltk
@@ -84,6 +85,11 @@ def model_trainer(
     Returns:
         A tuple containing the trained SVD, KNN, BaselineOnly, NormalPredictor, NMF, SlopeOne, and content-based models.
     """
+    mlflow.sklearn.autolog() # This will auto-log the model training process and save it to MLflow 
+    mlflow.log_artifact
+    mlflow.log_metric
+    mlflow.log_param
+
     
     # Train the collaborative filtering models
     svd = SVD(**best_params_svd)
